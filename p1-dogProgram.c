@@ -40,7 +40,7 @@ void pauseShell()
 void openFile(char fileName[256])
 {
 #if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
-	char path[256] = "gedit";
+	char path[256] = "gedit ";
 	strcat(path, fileName);
 	system(path);
 #endif
@@ -81,6 +81,7 @@ void tolowerCase(char *str)
 	}
 }
 
+//funcion para escribir un nuevo registro en el archivo 
 int writeRegister(void *ap, int position)
 {
 
@@ -106,6 +107,7 @@ int writeRegister(void *ap, int position)
 	return 0;
 }
 
+//funcion que nos permite buscar una estructura dada su posicion en la tabla 
 void findByIndex(struct DogType *ap, int index, FILE *f)
 {
 
@@ -136,6 +138,7 @@ void findByIndex(struct DogType *ap, int index, FILE *f)
 	ap->medicalHistoryID = reg.medicalHistoryID;
 }
 
+//funcion para contar la cantidad de registros
 int countRecords(FILE *f)
 {
 	int r;
@@ -153,6 +156,7 @@ int countRecords(FILE *f)
 	return count;
 }
 
+//funcion para calcular el has de un string
 unsigned int calculateHash(const char *word)
 {
 	unsigned int hash = 0, c;
@@ -165,6 +169,7 @@ unsigned int calculateHash(const char *word)
 	return hash % HASHSIZE;
 }
 
+//funcion para grabar el hash en disco
 void writeHash()
 {
 	int status = remove("hash.dat");
@@ -192,6 +197,7 @@ void writeHash()
 	fclose(f);
 }
 
+//funcion para leer el hash desde el archivo 
 void readHash()
 {
 
@@ -262,6 +268,7 @@ int validateFloat(char input[MAXINPUT])
 		return 0;
 }
 
+//funcion para ejecutar el menu
 int executeMenu()
 {
 
@@ -285,7 +292,7 @@ int executeMenu()
 	sscanf(menuInput, "%d", &selectedOption);
 	return selectedOption;
 }
-
+// funcion que valida los datos ingresados por el usuario al insertar registro
 int validateRegValue(int type, char input[MAXINPUT])
 {
 
@@ -360,9 +367,9 @@ int validateRegValue(int type, char input[MAXINPUT])
 
 	case 6:
 		if (validateFloat(input))
-		{
-			float value;
-			sscanf(input, "%lf", &value);
+		{	
+			
+			float value = strtof(input, NULL);
 			if (value < 3.40282e+38 && value >= 0.0)
 				return 1;
 		}
@@ -390,6 +397,8 @@ int validateRegValue(int type, char input[MAXINPUT])
 		break;
 	}
 }
+
+//funcion para elimiinar un registro dada la cantidad total de registros y la posicion del elemento que se desea eiminar del archivo
 
 int eraseFunction(int sizeOfRegisters, int indexToDelete)
 {
@@ -696,8 +705,7 @@ int main()
 				scanf("%[^\n]%*c", regInput);
 			} while (!validateRegValue(6, regInput));
 
-			float weight;
-			sscanf(regInput, "%f", &weight);
+			float weight = strtof(regInput, NULL);
 			printf("---------------------------------------------------------------------------\n");
 
 			do
@@ -841,7 +849,7 @@ int main()
 							printf("error al mover al index\n");
 						}
 						int r = fwrite(&searchedReg, sizeof(struct DogType), 1, f);
-						printf("escritos %d\n", r);
+						
 						if (r == 0)
 						{
 							perror("Could not write Struct");
@@ -937,7 +945,7 @@ int main()
 
 			sscanf(deleteInput, "%d", &regDeleteNumber);
 
-			printf("continue");
+			
 
 			if (regDeleteNumber > 0 && regDeleteNumber <= REGISTROS)
 			{
