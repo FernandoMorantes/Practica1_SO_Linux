@@ -5,6 +5,29 @@
 #include <math.h>
 #include <limits.h>
 
+void clearScreen()
+{
+#if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
+	system("clear");
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+	system("cls");
+#endif
+}
+
+void pauseShell()
+{
+#if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
+	printf("Presione cualquier tecla para continuar...");
+	int c = getchar();
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+	system("pause");
+#endif
+}
+
 struct DogType{
 	char name[32];
 	char type[32];
@@ -212,6 +235,10 @@ int registros;
 int main(int argc, char *argv[]) {
 	//para crear registros nuevos borrar archivo, cambiar rb+ a ab+ en fopen
 	//PARA GENERAR DATA
+	clearScreen();
+	printf("---------------------------------------------------------------------------\n");
+	printf("GENERANDO DATOS...\n");
+	printf("---------------------------------------------------------------------------\n\n");
 
 	srand(time(NULL));
 
@@ -278,5 +305,7 @@ int main(int argc, char *argv[]) {
 	printf("prev hash index: %d\n\n", test.prevHashIndex);
 
 	*/
+	pauseShell();
+	clearScreen();
 	return 0;
 }

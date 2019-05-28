@@ -610,53 +610,6 @@ int readInt()
 int main()
 {
 	clearScreen();
-	struct sockaddr_in server, client1;
-	size_t tama, tamaClient;
-	int r;
-	int fd, fd1;
-
-	fd = socket(AF_INET, SOCK_STREAM, 0);
-
-	if(fd == -1){
-		perror("error al crear socket");
-	}
-
-	server.sin_family = AF_INET;
-	server.sin_port = htons(PORT);
-	server.sin_addr.s_addr = INADDR_ANY;
-	bzero(server.sin_zero, 8);
-	tama = sizeof( struct sockaddr_in);
-	printf("Bind\n");
-	r = bind(fd, (struct sockaddr_in*)&server, tama);
-
-	if(r == -1){
-		perror("error en bind");
-	}
-	printf("Listen\n");
-	r = listen(fd, BACKLOG);
-	if(r == -1){
-		perror("error en listen");
-	}
-	printf("Waiting\n");
-	tamaClient = 0;
-	fd1 = accept(fd, (struct sockaddr_in*)&client1, &tamaClient);
-
-	if(fd1 <= 0){
-		perror("error en accept");
-	}
-
-	r = send(fd1, "pito  pito test test", 20, 0);
-
-	if(r <= 0){
-		perror("error al enviar");
-	}
-	
-	pauseShell();
-
-	close(fd1);
-	close(fd);
-
-	clearScreen();
 	printf("---------------------------------------------------------------------------\n");
 	printf("CARGANDO PROGRAMA ...\n");
 	printf("---------------------------------------------------------------------------\n");
@@ -673,6 +626,79 @@ int main()
 	}
 
 	REGISTROS = countRecords(f);
+
+	//Creacion del socket
+	struct sockaddr_in server, client1;
+	size_t tama, tamaClient;
+	int r;
+	int fd, fd1;
+
+	fd = socket(AF_INET, SOCK_STREAM, 0);
+
+	if(fd == -1){
+		perror("error al crear socket");
+	}
+
+	//Parametros de la estructura sockaddr_in server
+	server.sin_family = AF_INET;
+	server.sin_port = htons(PORT);
+	server.sin_addr.s_addr = INADDR_ANY;
+	bzero(server.sin_zero, 8);
+
+	//Bind del server
+	tama = sizeof( struct sockaddr_in);
+	printf("Bind\n");
+	r = bind(fd, (struct sockaddr_in*)&server, tama);
+
+	if(r == -1){
+		perror("error en bind");
+	}
+
+	//Listen del server
+	printf("Listen\n");
+	r = listen(fd, BACKLOG);
+	if(r == -1){
+		perror("error en listen");
+	}
+
+	printf("Waiting\n");
+
+	//Conexion con un cliente 
+	tamaClient = 0;
+	fd1 = accept(fd, (struct sockaddr_in*)&client1, &tamaClient);
+
+	if(fd1 <= 0){
+		perror("error en accept");
+	}
+
+	printf("---------------------------------------------------------------------------\n");
+	//Test de envio de datos
+	struct DogType sampleReg;
+	findByIndex(&sampleReg, 1499916, f);
+
+	printf("SENT DATA \n\n");
+	printf("name: %s\n", sampleReg.name);
+	printf("type: %s\n", sampleReg.type);
+	printf("age: %d\n", sampleReg.age);
+	printf("breed: %s\n", sampleReg.breed);
+	printf("height: %d\n", sampleReg.height);
+	printf("weight: %.2f\n", sampleReg.weight);
+	printf("sex: %c\n", sampleReg.sex);
+	printf("index: %d\n", sampleReg.index);
+	printf("prev hash index: %d\n\n", sampleReg.prevHashIndex);
+	
+	r = send(fd1, &sampleReg, sizeof(sampleReg), 0);
+
+	if(r <= 0){
+		perror("error al enviar");
+	}
+	printf("---------------------------------------------------------------------------\n");
+	pauseShell();
+
+	//Cerrando file descriptor de los sockets
+	close(fd1);
+	close(fd);
+
 	clearScreen();
 	printf("\nBIENVENIDO USUARIO\n");
 
