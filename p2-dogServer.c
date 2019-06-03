@@ -203,12 +203,12 @@ void readHash()
 	
 	FILE *f;
 	f = fopen("hash.dat", "rb");
-	int d = fseek(f, 0 * sizeof(struct DogType), SEEK_SET);
+	/*int d = fseek(f, 0 * sizeof(struct DogType), SEEK_SET);
 	if (d == -1)
 	{
 		printf("error al mover al index\n");
 	}
-
+*/
 	if (f == NULL)
 	{
 		perror("Could not open file");
@@ -511,11 +511,11 @@ int eraseFunction(int sizeOfRegisters, int indexToDelete)
 	return 0;
 }
 
-void findByName(char name[32], FILE *f)
-{
+void findByName(int* sockID, char name[32], FILE *f){
 	int hash = calculateHash(name);
 	int lastIndex = lastHashIndex[hash];
 	int count = 0;
+	int t;
 	struct DogType reg;
 
 	if (lastIndex == -1)
@@ -524,24 +524,28 @@ void findByName(char name[32], FILE *f)
 		printf("NO EXISTEN REGISTROS CON EL NOMBRE %s\n", name);
 		printf("---------------------------------------------------------------------------\n\n");
 	}
-	else
-	{
+	else{
+		while(lastIndex != -1){
+			findByIndex(&reg, lastIndex, f);
+			if (strcmp(reg.name, name) == 0){
+				count++;
+			}
+			lastIndex = reg.prevHashIndex;
+		}
+		t = send(sockID, &count, sizeof(int), 0);
+		lastIndex = lastHashIndex[hash];
+		if(t == -1){
+			perror("Error Enviando Count");
+		}
+
 		while (lastIndex != -1)
 		{
 			findByIndex(&reg, lastIndex, f);
-			if (strcmp(reg.name, name) == 0)
-			{
-				printf("---------------------------------------------------------------------------\n\n");
-				printf("Informacion del registro: %d\n", (reg.index + 1));
-				printf("\nname: %s\n", reg.name);
-				printf("type: %s\n", reg.type);
-				printf("age: %d\n", reg.age);
-				printf("breed: %s\n", reg.breed);
-				printf("height: %d\n", reg.height);
-				printf("weight: %.2lf\n", reg.weight);
-				printf("sex: %c\n\n", reg.sex);
-
-				count++;
+			if (strcmp(reg.name, name) == 0){
+				t = send(sockID, &reg, sizeof(struct DogType), 0);
+				if(t == -1){
+					perror("Error Enviando estructura");
+				}
 			}
 			lastIndex = reg.prevHashIndex;
 		}
@@ -605,29 +609,233 @@ int readInt()
 		return 0;
 	}
 }
+void executeOption(int* sockId, int menuOption){
+	switch(menuOption){
+		case 1:
+			readHash();
+
+			struct DogType newReg;
+			
+			int v = recv(sockId, &newReg, sizeof(struct DogType), 0);
+			if(v ==-1){
+				perror("Error recibiendo struct ");
+			}
+
+			int newReghash = calculateHash(newReg.name);
+			newReg.prevHashIndex = lastHashIndex[newReghash];
+			lastHashIndex[newReghash] = newReg.index;
+
+			writeRegister(&newReg, newReg.index);
+			REGISTROS++;
+
+			writeHash();
+			readHash();
+			break;
+
+		case 2:
+			printf("");
+			int data2, hist;
+			struct DogType searchedReg;
+			v =  recv(sockId, &data2, sizeof(int), 0);
+			if(v ==-1){
+				perror("Error recibiendo index ");
+			}
+			FILE *f;
+			f = fopen("dataDogs.dat", "rb+");
+
+			if (f == NULL){
+				perror("Could not open a file");
+				exit(-1);
+			}
+			
+			findByIndex(&searchedReg, data2, f);
+			v = send(sockId, &searchedReg, sizeof(struct DogType), 0);
+			if(v ==-1){
+				perror("Error Enviando estructura ");
+			}
+			close(f);
+			v =  recv(sockId, &hist, sizeof(int), 0);
+			if(v ==-1){
+				perror("Error recibiendo Opcion historia clinica");
+			}
+			printf("historia  %d\n", hist);
+			if(hist == 1){
+				printf("Si historia clinica\n");
+				int number = data2;
+				if (searchedReg.medicalHistoryID == -1){
+						printf("Medical %d, data2 %d\n", medicalCreated, data2);
+						data2 = medicalCreated;
+						searchedReg.medicalHistoryID = medicalCreated;
+						medicalCreated++;
+						printf("Medical %d, data2 %d\n", medicalCreated, data2);
+						int d = fseek(f, number * sizeof(struct DogType), SEEK_SET);
+						if (d == -1)
+						{
+							printf("error al mover al index\n");
+						}
+						int r = fwrite(&searchedReg, sizeof(struct DogType), 1, f);
+						printf("escritos %d\n", r);
+						if (r == 0)
+						{
+							perror("Could not write Struct");
+							exit(-1);
+						}
+						d = fseek(f, 0 * sizeof(struct DogType), SEEK_SET);
+						if (d == -1)
+						{
+							printf("error al regresar al inicio \n");
+						}
+						fclose(f);
+						f = fopen("dataDogs.dat", "rb+");
+						if (f == NULL)
+						{
+							perror("Could not open a file");
+							exit(-1);
+						}
+					}
+					else{
+						data2 = searchedReg.medicalHistoryID;
+					}
+					char fileName[256] = "Historias_clinicas/";
+					char fileNameNumber[256];
+
+					sprintf(fileNameNumber, "%d", data2);
+					strcat(fileName, fileNameNumber);
+					strcat(fileName, ".txt");
+					printf("path %s\n", fileName);
+					if (!(access(fileName, F_OK) != -1))
+					{
+
+						FILE *g = fopen(fileName, "w");
+
+						if (g == NULL){
+							printf("Error opening file!\n");
+							exit(1);
+						}
+
+						fprintf(g, "---------------------------------------------------------------------------\n");
+						fprintf(g, "Datos del paciente\n");
+						fprintf(g, "\nname: %s\n", searchedReg.name);
+						fprintf(g, "type: %s\n", searchedReg.type);
+						fprintf(g, "age: %d\n", searchedReg.age);
+						fprintf(g, "breed: %s\n", searchedReg.breed);
+						fprintf(g, "height: %d\n", searchedReg.height);
+						fprintf(g, "weight: %.2f\n", searchedReg.weight);
+						fprintf(g, "sex: %c\n", searchedReg.sex);
+						fprintf(g, "---------------------------------------------------------------------------\n");
+						fprintf(g, "Historia clinica: ");
+
+						fclose(g);
+					}
+
+					FILE *fp = fopen(fileName, "ab+");
+
+					if(fp == NULL){
+						perror("File");
+						return 2;
+					}
+
+					while(1){
+						char sendbuffer[1024] = "";
+						int b = fread(sendbuffer, 1, sizeof(sendbuffer), fp);
+						if( b > 0){
+							printf("Enviando\n");
+							v = send(sockId, sendbuffer, b, 0);
+							if(v ==-1){
+								perror("Error Enviando estructura ");
+							}
+						}
+						if(b < 1024){
+							if(feof(fp)){
+								int flag = -1;
+								printf("Fin archivo");
+								
+							}
+							break;
+						}
+					}
+					
+
+					fclose(fp);
+					printf("Termino\n\n");
+					
+					int b = 0;
+					char recBuf[1024] = "";
+					FILE* t = fopen(fileName, "w");
+					if(t == NULL){
+						perror("Abriendo archivo");
+					}
+
+					do{
+						b = recv(sockId, recBuf, 1024, 0);
+						fprintf(t, "%s", recBuf);
+					}while(b == 1024);
+
+					fclose(t);
+			}
+			break;
+		case 3:
+			printf("");
+			int data3;
+			v =  recv(sockId, &data3, sizeof(int), 0);
+			if(v ==-1){
+				perror("Error recibiendo index ");
+			}
+			eraseFunction(REGISTROS, data3);
+			int confirm = REGISTROS;
+			v = send(sockId, &confirm, sizeof(int), 0);
+			if(v == -1){
+				perror("Error Enviando confirmacion ");
+			}
+
+			break;
+		case 4:
+			printf("");
+			char data4[256];
+			v =  recv(sockId, data4, sizeof(data4), 0);
+			if(v ==-1){
+				perror("Error recibiendo nombre");
+			}
+			FILE *g;
+			g = fopen("dataDogs.dat", "rb+");
+
+			if (g == NULL){
+				perror("Could not open a file");
+				exit(-1);
+			}
+			findByName(sockId, data4, g);
+			close(g);
+			break;
+		case 5:
+			printf("\nentro a caso 5\n");
+			break;
+		default:
+			printf("Desfault\n");
+			break;
+	}
+}
 
 
-int main()
-{
+int main(){
+
 	clearScreen();
 	printf("---------------------------------------------------------------------------\n");
 	printf("CARGANDO PROGRAMA ...\n");
 	printf("---------------------------------------------------------------------------\n");
-
+	printf("leyendo int\n");
 	medicalCreated = readInt();
 	readHash();
+	printf("Arbiendo archivo\n");
 	FILE *f;
 	f = fopen("dataDogs.dat", "rb+");
 
-	if (f == NULL)
-	{
+	if (f == NULL){
 		perror("Could not open a file");
 		exit(-1);
 	}
 
 	REGISTROS = countRecords(f);
-
-	//Creacion del socket
+	close(f);
 	struct sockaddr_in server, client1;
 	size_t tama, tamaClient;
 	int r;
@@ -665,437 +873,56 @@ int main()
 
 	//Conexion con un cliente 
 	tamaClient = 0;
-	fd1 = accept(fd, (struct sockaddr_in*)&client1, &tamaClient);
-
+	//fd1 = accept(fd, (struct sockaddr_in*)&client1, &tamaClient);
+	int b;
+	fd1  = accept(fd, (struct sockaddr_in*)&client1, &tamaClient);
 	if(fd1 <= 0){
-		perror("error en accept");
+		perror("Error en accept");
 	}
-
-	printf("---------------------------------------------------------------------------\n");
-	//Test de envio de datos
-	struct DogType sampleReg;
-	findByIndex(&sampleReg, 1499916, f);
-
-	printf("SENT DATA \n\n");
-	printf("name: %s\n", sampleReg.name);
-	printf("type: %s\n", sampleReg.type);
-	printf("age: %d\n", sampleReg.age);
-	printf("breed: %s\n", sampleReg.breed);
-	printf("height: %d\n", sampleReg.height);
-	printf("weight: %.2f\n", sampleReg.weight);
-	printf("sex: %c\n", sampleReg.sex);
-	printf("index: %d\n", sampleReg.index);
-	printf("prev hash index: %d\n\n", sampleReg.prevHashIndex);
-	
-	r = send(fd1, &sampleReg, sizeof(sampleReg), 0);
-
-	if(r <= 0){
-		perror("error al enviar");
+	/*
+	while(recv(fd1, &b, sizeof(b), 0)){
+		
+		if(r ==-1){
+			perror("Error recibiendo opcion ");
+		}else if(b == -1){
+			break;
+		}else{
+			printf(" %d\n",b);
+		}
 	}
-	printf("---------------------------------------------------------------------------\n");
-	pauseShell();
-
-	//Cerrando file descriptor de los sockets
-	close(fd1);
-	close(fd);
+	*/
 
 	clearScreen();
 	printf("\nBIENVENIDO USUARIO\n");
 
-	int menuOption = executeMenu();
-
-	while (menuOption != 5)
-	{
-		clearScreen();
-		switch (menuOption)
-		{
-		case 1:
-			printf("---------------------------------------------------------------------------\n");
-			printf("INGRESAR REGISTRO\n");
-			printf("---------------------------------------------------------------------------\n\n");
-
-			char regInput[MAXINPUT];
-
-			do
-			{
-				printf("Ingrese el NOMBRE del animal (Max 32 caracteres): ");
-				scanf("%[^\n]%*c", regInput);
-			} while (!validateRegValue(1, regInput));
-
-			char name[32];
-			strcpy(name, regInput);
-			tolowerCase(name);
-			printf("---------------------------------------------------------------------------\n");
-
-			do
-			{
-				printf("Ingrese el TIPO de animal (Max 32 caracteres): ");
-				scanf("%[^\n]%*c", regInput);
-			} while (!validateRegValue(2, regInput));
-
-			char type[32];
-			strcpy(type, regInput);
-			tolowerCase(type);
-			printf("---------------------------------------------------------------------------\n");
-
-			do
-			{
-				printf("Ingrese la EDAD del animal (anos): ");
-				scanf("%[^\n]%*c", regInput);
-			} while (!validateRegValue(3, regInput));
-
-			int age;
-			sscanf(regInput, "%d", &age);
-			printf("---------------------------------------------------------------------------\n");
-
-			do
-			{
-				printf("Ingrese la RAZA del animal: ");
-				scanf("%[^\n]%*c", regInput);
-			} while (!validateRegValue(4, regInput));
-
-			char breed[16];
-			strcpy(breed, regInput);
-			tolowerCase(breed);
-			printf("---------------------------------------------------------------------------\n");
-
-			do
-			{
-				printf("Ingrese la ESTATURA del animal (En centimetros): ");
-				scanf("%[^\n]%*c", regInput);
-			} while (!validateRegValue(5, regInput));
-
-			int height;
-			sscanf(regInput, "%d", &height);
-			printf("---------------------------------------------------------------------------\n");
-
-			do
-			{
-				printf("Ingrese el PESO del animal (En kilogramos): ");
-				scanf("%[^\n]%*c", regInput);
-			} while (!validateRegValue(6, regInput));
-
-			float weight;
-			sscanf(regInput, "%f", &weight);
-			printf("---------------------------------------------------------------------------\n");
-
-			do
-			{
-				printf("Ingrese el SEXO del animal (H o M): ");
-				scanf("%[^\n]%*c", regInput);
-			} while (!validateRegValue(7, regInput));
-			printf("---------------------------------------------------------------------------\n");
-
-			char sex = regInput[0];
-
-			struct DogType *newReg = malloc(sizeof(struct DogType));
-
-			strcpy(newReg->name, name);
-			strcpy(newReg->type, type);
-			newReg->age = age;
-			strcpy(newReg->breed, breed);
-			newReg->height = height;
-			newReg->weight = weight;
-			newReg->sex = sex;
-			newReg->deleted = false;
-			newReg->index = REGISTROS;
-			newReg->medicalHistoryID = -1;
-
-			int newReghash = calculateHash(newReg->name);
-			newReg->prevHashIndex = lastHashIndex[newReghash];
-			lastHashIndex[newReghash] = newReg->index;
-			pauseShell();
-
-			writeRegister(newReg, newReg->index);
-			REGISTROS++;
-			clearScreen();
-			printf("---------------------------------------------------------------------------\n");
-			printf("EL REGISTRO HA SIDO CREADO CORRECTAMENTE\n");
-			printf("---------------------------------------------------------------------------\n\n");
-			printf("RESUMEN:\n\n");
-			printf("Registro numero %d\n", ((newReg->index) + 1));
-			printf("name: %s\n", newReg->name);
-			printf("type: %s\n", newReg->type);
-			printf("age: %d\n", newReg->age);
-			printf("breed: %s\n", newReg->breed);
-			printf("height: %d\n", newReg->height);
-			printf("weight: %.2lf\n", newReg->weight);
-			printf("sex: %c\n", newReg->sex);
-			printf("prev hash index: %d\n\n", newReg->prevHashIndex);
-
-			writeHash();
-			readHash();
-			pauseShell();
-			break;
-
-		case 2:
-			fclose(f);
-			f = fopen("dataDogs.dat", "rb+");
-
-			if (f == NULL)
-			{
-				perror("Could not open a file");
-				exit(-1);
-			}
-			printf("---------------------------------------------------------------------------\n");
-			printf("VER REGISTRO\n");
-			printf("---------------------------------------------------------------------------\n");
-			printf("NUMERO DE REGISTROS: %d\n", REGISTROS);
-			printf("---------------------------------------------------------------------------\n\n");
-
-			char numberInput[MAXINPUT];
-			int regNumber;
-			do
-			{
-				printf("Ingrese el numero de registro que desea ver: ");
-				gets(numberInput);
-				if (!validateInteger(numberInput))
-				{
-					printf("El numero ingresado no es valido\n\n");
-				}
-				else
-				{
-					break;
-				}
-			} while (true);
-
-			sscanf(numberInput, "%d", &regNumber);
-
-			if (regNumber > 0 && regNumber <= REGISTROS)
-			{
-
-				struct DogType searchedReg;
-				findByIndex(&searchedReg, (regNumber - 1), f);
-				clearScreen();
-				printf("---------------------------------------------------------------------------\n\n");
-				printf("Registro %d\n", regNumber);
-				printf("\nname: %s\n", searchedReg.name);
-				printf("type: %s\n", searchedReg.type);
-				printf("age: %d\n", searchedReg.age);
-				printf("breed: %s\n", searchedReg.breed);
-				printf("height: %d\n", searchedReg.height);
-				printf("weight: %.2lf\n", searchedReg.weight);
-				printf("sex: %c\n", searchedReg.sex);
-				printf("hash: %d\n", calculateHash(searchedReg.name));
-				printf("prev hash index: %d\n\n", searchedReg.prevHashIndex);
-				printf("medical id: %d\n\n", searchedReg.medicalHistoryID);
-				printf("---------------------------------------------------------------------------\n");
-
-				char clinicHystoryOption[MAXINPUT] = " ";
-
-				do
-				{
-					printf("Desea ver la historia clinica (Y/N): ");
-					gets(clinicHystoryOption);
-
-					if (strlen(clinicHystoryOption) != 1)
-					{
-						printf("Comando no valido\n\n");
-					}
-					else
-					{
-						if (clinicHystoryOption[0] == 'Y' || clinicHystoryOption[0] == 'y' || clinicHystoryOption[0] == 'N' || clinicHystoryOption[0] == 'n')
-						{
-							break;
-						}
-						else
-						{
-							printf("Comando no valido\n\n");
-						}
-					}
-
-				} while (true);
-				int number = (regNumber - 1);
-				if (clinicHystoryOption[0] == 'Y' || clinicHystoryOption[0] == 'y')
-				{
-					if (searchedReg.medicalHistoryID == -1)
-					{
-						regNumber = medicalCreated;
-						searchedReg.medicalHistoryID = medicalCreated;
-						medicalCreated++;
-
-						int d = fseek(f, number * sizeof(struct DogType), SEEK_SET);
-						if (d == -1)
-						{
-							printf("error al mover al index\n");
-						}
-						int r = fwrite(&searchedReg, sizeof(struct DogType), 1, f);
-						printf("escritos %d\n", r);
-						if (r == 0)
-						{
-							perror("Could not write Struct");
-							exit(-1);
-						}
-						d = fseek(f, 0 * sizeof(struct DogType), SEEK_SET);
-						if (d == -1)
-						{
-							printf("error al regresar al inicio \n");
-						}
-						fclose(f);
-						f = fopen("dataDogs.dat", "rb+");
-						if (f == NULL)
-						{
-							perror("Could not open a file");
-							exit(-1);
-						}
-					}
-					else
-					{
-						regNumber = searchedReg.medicalHistoryID;
-					}
-					char fileName[256] = "Historias_clinicas/";
-					char fileNameNumber[256];
-
-					sprintf(fileNameNumber, "%d", regNumber);
-					strcat(fileName, fileNameNumber);
-					strcat(fileName, ".txt");
-
-					if (!(access(fileName, F_OK) != -1))
-					{
-
-						FILE *g = fopen(fileName, "w");
-
-						if (g == NULL)
-						{
-							printf("Error opening file!\n");
-							exit(1);
-						}
-
-						fprintf(g, "---------------------------------------------------------------------------\n");
-						fprintf(g, "Datos del paciente\n");
-						fprintf(g, "\nname: %s\n", searchedReg.name);
-						fprintf(g, "type: %s\n", searchedReg.type);
-						fprintf(g, "age: %d\n", searchedReg.age);
-						fprintf(g, "breed: %s\n", searchedReg.breed);
-						fprintf(g, "height: %d\n", searchedReg.height);
-						fprintf(g, "weight: %.2f\n", searchedReg.weight);
-						fprintf(g, "sex: %c\n", searchedReg.sex);
-						fprintf(g, "---------------------------------------------------------------------------\n");
-						fprintf(g, "Historia clinica: ");
-
-						fclose(g);
-					}
-					openFile(fileName);
-				}
-				clearScreen();
-			}
-			else
-			{
-				clearScreen();
-				printf("---------------------------------------------------------------------------\n");
-				printf("EL REGISTRO NUMERO %d NO EXISTE\n", regNumber);
-				printf("---------------------------------------------------------------------------\n");
-			}
-
-			pauseShell();
-			break;
-
-		case 3:
-			printf("---------------------------------------------------------------------------\n");
-			printf("BORRAR REGISTRO\n");
-			printf("---------------------------------------------------------------------------\n");
-			printf("NUMERO DE REGISTROS: %d\n", REGISTROS);
-			printf("---------------------------------------------------------------------------\n\n");
-
-			char deleteInput[MAXINPUT];
-			int regDeleteNumber;
-
-			do
-			{
-				printf("Ingrese el numero de registro que desea borrar: ");
-				gets(deleteInput);
-				if (!validateInteger(deleteInput))
-				{
-					printf("El numero ingresado no es valido\n\n");
-				}
-				else
-				{
-					break;
-				}
-			} while (true);
-
-			sscanf(deleteInput, "%d", &regDeleteNumber);
-
-			printf("continue");
-
-			if (regDeleteNumber > 0 && regDeleteNumber <= REGISTROS)
-			{
-
-				clearScreen();
-				printf("---------------------------------------------------------------------------\n");
-				printf("BORRANDO REGISTRO ...\n");
-				printf("---------------------------------------------------------------------------\n");
-
-				fclose(f);
-				eraseFunction(REGISTROS, (regDeleteNumber - 1));
-
-				f = fopen("dataDogs.dat", "ab+");
-
-				if (f == NULL)
-				{
-					perror("Could not open a file");
-					exit(-1);
-				}
-			}
-			else
-			{
-				clearScreen();
-				printf("---------------------------------------------------------------------------\n");
-				printf("EL REGISTRO NUMERO %d NO EXISTE\n", regDeleteNumber);
-				printf("---------------------------------------------------------------------------\n");
-			}
-
-			pauseShell();
-			break;
-
-		case 4:
-			printf("---------------------------------------------------------------------------\n");
-			printf("BUSCAR REGISTRO\n");
-			printf("---------------------------------------------------------------------------\n\n");
-			printf("Ingrese el nombre a busar en los registros (Max 32 caracteres): ");
-
-			readHash();
-			char nameInput[MAXINPUT];
-
-			do
-			{
-				gets(nameInput);
-				if (strlen(nameInput) <= 32)
-				{
-					break;
-				}
-				else
-				{
-					printf("El nombre ingresado no es valido\n\n");
-				}
-			} while (true);
-
-			clearScreen();
-			tolowerCase(nameInput);
-			findByName(nameInput, f);
-			pauseShell();
-			break;
-
-		case 5:
-			break;
-
-		default:
-			printf("---------------------------------------------------------------------------\n");
-			printf("OPCION NO VALIDA\n");
-			printf("---------------------------------------------------------------------------\n");
-
-			pauseShell();
+	r = send(fd1, &REGISTROS, sizeof(REGISTROS), 0);
+	if(r == -1 ){
+		perror("Error al enviar cantidad de registros");
+	}
+	
+	while(1){
+		r = recv(fd1, &b, sizeof(b), 0);
+		if(r == -1){
+			perror("Error al recibir opcion");
+		}
+		
+		printf("Opcion selecionada %d\n", b);
+		executeOption(fd1, b);
+		if(b == 5){
 			break;
 		}
-		clearScreen();
-		menuOption = executeMenu();
 	}
+
+	
+
 	writeInt(&medicalCreated);
 	clearScreen();
 	printf("---------------------------------------------------------------------------\n");
 	printf("Finalizando programa ...\n");
 	printf("---------------------------------------------------------------------------\n");
 	fclose(f);
+	close(fd1);
+	close(fd);
 	pauseShell();
 
 	return 0;
