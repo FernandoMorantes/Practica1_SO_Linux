@@ -457,7 +457,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			}
 
 			if(hist == 1){
-				readInt();
+				medicalCreated = readInt();
 				int number = data2;
 				if (searchedReg.medicalHistoryID == -1){
 						//printf("Medical %d, data2 %d\n", medicalCreated, data2);
