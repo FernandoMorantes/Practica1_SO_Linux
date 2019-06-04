@@ -32,19 +32,6 @@ void clearScreen()
 #endif
 }
 
-void openFile(char fileName[256])
-{
-#if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
-	char path[256] = "gedit";
-	strcat(path, fileName);
-	system(path);
-#endif
-
-#if defined(_WIN32) || defined(_WIN64)
-	ShellExecute(NULL, NULL, fileName, NULL, NULL, SW_SHOW);
-#endif
-}
-
 int REGISTROS;
 int HASHSIZE = 1999;
 int lastHashIndex[2000];
@@ -64,17 +51,6 @@ struct DogType
 	int prevHashIndex;
 	int medicalHistoryID;
 };
-
-void tolowerCase(char *str)
-{
-	unsigned char *p = (unsigned char *)str;
-
-	while (*p)
-	{
-		*p = tolower((unsigned char)*p);
-		p++;
-	}
-}
 
 int writeRegister(void *ap, int position)
 {
@@ -192,12 +168,6 @@ void readHash()
 	
 	FILE *f;
 	f = fopen("hash.dat", "rb");
-	/*int d = fseek(f, 0 * sizeof(struct DogType), SEEK_SET);
-	if (d == -1)
-	{
-		printf("error al mover al index\n");
-	}
-*/
 	if (f == NULL)
 	{
 		perror("Could not open file");
@@ -212,178 +182,6 @@ void readHash()
 		exit(-1);
 	}
 	fclose(f);
-}
-
-int validateMenuInput(char input[MAXINPUT])
-{
-
-	int length = strlen(input);
-	for (int i = 0; i < length; i++)
-	{
-		if (!isdigit(input[i]))
-		{
-			printf("Input no valido\n\n");
-			return 0;
-			exit(1);
-		}
-	}
-	return 1;
-}
-
-int validateInteger(char input[MAXINPUT])
-{
-
-	int length = strlen(input);
-	for (int i = 0; i < length; i++)
-	{
-		if (!isdigit(input[i]))
-		{
-			return 0;
-			exit(1);
-		}
-	}
-	return 1;
-}
-
-int validateFloat(char input[MAXINPUT])
-{
-
-	double value;
-	char *endptr;
-	value = strtod(input, &endptr);
-	if ((*endptr == '\0') || (isspace(*endptr) != 0))
-		return 1;
-	else
-		return 0;
-}
-
-int executeMenu()
-{
-
-	int selectedOption;
-	printf("---------------------------------------------------------------------------\n");
-	printf("MENU PRINCIPAL\nSeleccione la el numero de la opcion que desea ejecutar\n\n");
-	printf("1 - Ingresar registro\n");
-	printf("2 - Ver registro\n");
-	printf("3 - Borrar registro\n");
-	printf("4 - Buscar registro\n");
-	printf("5 - Salir\n");
-	printf("---------------------------------------------------------------------------\n");
-
-	char menuInput[MAXINPUT] = "";
-	do
-	{
-		printf("Opcion: ");
-		gets(menuInput);
-	} while (!validateMenuInput(menuInput));
-
-	sscanf(menuInput, "%d", &selectedOption);
-	return selectedOption;
-}
-
-int validateRegValue(int type, char input[MAXINPUT])
-{
-
-	switch (type)
-	{
-	case 1:
-		if (strlen(input) <= 32)
-		{
-			return 1;
-		}
-		else
-		{
-			printf("El dato ingresado no es valido\n\n");
-			return 0;
-		}
-		break;
-
-	case 2:
-		if (strlen(input) <= 32)
-		{
-			return 1;
-		}
-		else
-		{
-			printf("El dato ingresado no es valido\n\n");
-			return 0;
-		}
-		break;
-
-	case 3:
-		if (validateInteger(input))
-		{
-			int value;
-			sscanf(input, "%d", &value);
-			if (value < 2147483648 && value >= 0)
-				return 1;
-		}
-		else
-		{
-			printf("El dato ingresado no es valido\n\n");
-			return 0;
-		}
-
-		break;
-
-	case 4:
-		if (strlen(input) <= 16)
-		{
-			return 1;
-		}
-		else
-		{
-			printf("El dato ingresado no es valido\n\n");
-			return 0;
-		}
-		break;
-
-	case 5:
-		if (validateInteger(input))
-		{
-			int value;
-			sscanf(input, "%d", &value);
-			if (value < 2147483648 && value >= 0)
-				return 1;
-		}
-		else
-		{
-			printf("El dato ingresado no es valido\n\n");
-			return 0;
-		}
-		break;
-
-	case 6:
-		if (validateFloat(input))
-		{
-			float value;
-			sscanf(input, "%lf", &value);
-			if (value < 3.40282e+38 && value >= 0.0)
-				return 1;
-		}
-		else
-		{
-			printf("El dato ingresado no es valido\n\n");
-			return 0;
-		}
-		break;
-
-	case 7:
-		if (strlen(input) == 1 && (strcmp(input, "H") == 0 || strcmp(input, "M") == 0))
-		{
-			return 1;
-		}
-		else
-		{
-			printf("El dato ingresado no es valido\n\n");
-			return 0;
-		}
-		break;
-
-	default:
-		return 1;
-		break;
-	}
 }
 
 int eraseFunction(int sizeOfRegisters, int indexToDelete)
@@ -659,6 +457,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			}
 
 			if(hist == 1){
+				readInt();
 				int number = data2;
 				if (searchedReg.medicalHistoryID == -1){
 						//printf("Medical %d, data2 %d\n", medicalCreated, data2);
