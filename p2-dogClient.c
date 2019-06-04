@@ -274,10 +274,8 @@ int validateRegValue(int type, char input[MAXINPUT])
 
 int main(){
 
-	printf("---------------------------------------------------------------------------\n");
-	printf("CARGANDO PROGRAMA ...\n");
-	printf("---------------------------------------------------------------------------\n");
-
+	clearScreen();
+	
 	struct sockaddr_in server;
 	int fd, fd1;
 	size_t tama;
@@ -299,20 +297,32 @@ int main(){
 	r = connect(fd, (struct sockaddr_in*)&server, tama);
 
 	if(r == -1){
-		perror("error en bind");
+		printf("---------------------------------------------------------------------------\n");
+		printf("NO SE PUDO ESTABLECER UNA CONEXION CON EL SERVIDOR\n");
+		printf("---------------------------------------------------------------------------\n");
+		exit(0);
 	}
-	int regi;
+	int regs;
 
-	r = recv(fd, &regi, sizeof(int), 0);
+	r = recv(fd, &regs, sizeof(int), 0);
 	if(r == -1 ){
-		perror("Error recibiendo cantidad de registros");
-	}
-	REGISTROS = regi;
-	printf("Se recibio cantidad de registros: %d\n", REGISTROS);
-	pauseShell();
-	clearScreen();
-	printf("\nBIENVENIDO USUARIO\n");
+		printf("---------------------------------------------------------------------------\n");
+		printf("NO SE PUDO LEER LOS DATOS DEL SERVIDO CORRECTAMENTE\n");
+		printf("---------------------------------------------------------------------------\n");
+		exit(0);
+	}else{
+		REGISTROS = regs;
 
+		printf("---------------------------------------------------------------------------\n");
+		printf("CONEXION CON EL SERVIDOR ESTABLECIDA\n");
+		printf("---------------------------------------------------------------------------\n");
+		printf("SE RECIBIERON %d REGISTROS\n", REGISTROS);
+		printf("---------------------------------------------------------------------------\n");
+		pauseShell();
+		clearScreen();
+		printf("\nBIENVENIDO USUARIO\n");
+	}
+	
 	int menuOption = executeMenu();
 	while (menuOption != 5)
 	{
@@ -486,7 +496,7 @@ int main(){
 
 				clearScreen();
 				printf("---------------------------------------------------------------------------\n\n");
-				printf("Registro %d\n", regNumber++);
+				printf("Registro %d\n", (regNumber + 1));
 				printf("\nname: %s\n", searchedReg.name);
 				printf("type: %s\n", searchedReg.type);
 				printf("age: %d\n", searchedReg.age);
@@ -528,7 +538,7 @@ int main(){
 					int status = remove("temporal.txt");
 					if (status == 0)
 					{
-						printf("Temporal file deleted\n");
+						//printf("Temporal file deleted\n");
 					}
 										
 					int b = 0;
@@ -571,8 +581,6 @@ int main(){
 						if(b < 1024){
 							if(feof(fp)){
 								int flag = -1;
-								printf("Fin archivo");
-								
 							}
 							break;
 						}
@@ -639,31 +647,46 @@ int main(){
 					perror("Error Enviando numero de registro ");
 				} 
 
-
-
-
 				clearScreen();
 				printf("---------------------------------------------------------------------------\n");
 				printf("BORRANDO REGISTRO ...\n");
 				printf("---------------------------------------------------------------------------\n");
-				int confir;
-				r = recv(fd, &confir, sizeof(int), 0);
+				int eraseStatus;
+				r = recv(fd, &eraseStatus, sizeof(int), 0);
 				if(r ==-1){
 					perror("Error recibiendo Confirmacion");
 				}
-				REGISTROS = confir;
-				printf("SE ha Borrado el registro\n");
- /*			
-				fclose(f);
-				eraseFunction(REGISTROS, (regDeleteNumber - 1));
 
-				f = fopen("dataDogs.dat", "ab+");
+				clearScreen();
 
-				if (f == NULL)
-				{
-					perror("Could not open a file");
-					exit(-1);
-				} */
+				if(eraseStatus == 1){
+					printf("---------------------------------------------------------------------------\n");
+					printf("EL REGISTRO FUE ELIMINADO CORRECTAMENTE\n");
+					printf("---------------------------------------------------------------------------\n");
+				}else if(eraseStatus == -1){
+					printf("---------------------------------------------------------------------------\n");
+					printf("ERROR: NO SE PUDO ELIMINAR EL REGISTRO\n");
+					printf("---------------------------------------------------------------------------\n");
+				}else if(eraseStatus == 2){
+					printf("---------------------------------------------------------------------------\n");
+					printf("EL REGISTRO FUE ELIMINADO CORRECTAMENTE\n");
+					printf("---------------------------------------------------------------------------\n");
+					printf("LA HISTORIA CLINICA FUE ELIMINADA CORRECTAMENTE\n");
+					printf("---------------------------------------------------------------------------\n");
+				}else{
+					printf("---------------------------------------------------------------------------\n");
+					printf("EL REGISTRO FUE ELIMINADO CORRECTAMENTE\n");
+					printf("---------------------------------------------------------------------------\n");
+					printf("NO SE ENCONTRO HISTORIA CLINICA\n");
+					printf("---------------------------------------------------------------------------\n");
+				}
+				
+				int currentRegs;
+				r = recv(fd, &currentRegs, sizeof(int), 0);
+				if(r ==-1){
+					perror("Error recibiendo Confirmacion");
+				}
+				REGISTROS = currentRegs;
 			}
 			else
 			{
@@ -672,7 +695,6 @@ int main(){
 				printf("EL REGISTRO NUMERO %d NO EXISTE\n", regDeleteNumber);
 				printf("---------------------------------------------------------------------------\n");
 			}
-           
 
 			pauseShell();
 			break;
@@ -698,6 +720,11 @@ int main(){
 			} while (true);
 
 			clearScreen();
+
+			printf("---------------------------------------------------------------------------\n");
+			printf("BUSCANDO COINCIDENCIAS ...\n");
+			printf("---------------------------------------------------------------------------\n");
+
 			tolowerCase(nameInput);
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){

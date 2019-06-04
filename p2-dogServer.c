@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <limits.h>
+#include <time.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -28,18 +29,6 @@ void clearScreen()
 
 #if defined(_WIN32) || defined(_WIN64)
 	system("cls");
-#endif
-}
-
-void pauseShell()
-{
-#if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
-	printf("Presione cualquier tecla para continuar...");
-	int c = getchar();
-#endif
-
-#if defined(_WIN32) || defined(_WIN64)
-	system("pause");
 #endif
 }
 
@@ -401,6 +390,7 @@ int eraseFunction(int sizeOfRegisters, int indexToDelete)
 {
 	FILE *f;
 	FILE *fp2;
+	int returnValue = 0;
 	for (int i = 0; i < 2000; i++)
 	{
 		lastHashIndex[i] = -1;
@@ -472,29 +462,22 @@ int eraseFunction(int sizeOfRegisters, int indexToDelete)
 	fclose(f);
 	fclose(fp2);
 
-	clearScreen();
 	if (remove("dataDogs.dat") == 0)
 	{
-		printf("---------------------------------------------------------------------------\n");
-		printf("EL REGISTRO FUE ELIMINADO CORRECTAMENTE\n");
-		printf("---------------------------------------------------------------------------\n");
+		returnValue = 1;
 	}
 	else
 	{
-		printf("---------------------------------------------------------------------------\n");
-		printf("ERROR: NO SE PUDO ELIMINAR EL REGISTRO\n");
-		printf("---------------------------------------------------------------------------\n");
+		returnValue = -1;
 	}
 
 	if (remove(path) == 0)
 	{
-		printf("LA HISTORIA CLINICA FUE ELIMINADA CORRECTAMENTE\n");
-		printf("---------------------------------------------------------------------------\n");
+		returnValue = 2;
 	}
 	else
 	{
-		printf("NO SE ENCONTRO HISTORIA CLINICA\n");
-		printf("---------------------------------------------------------------------------\n");
+		returnValue = 0;
 	}
 
 	int err = rename("dataDogsCopy.dat", "dataDogs.dat");
@@ -508,23 +491,18 @@ int eraseFunction(int sizeOfRegisters, int indexToDelete)
 	readHash();
 
 	REGISTROS--;
-	return 0;
+	return returnValue;
 }
 
 void findByName(int* sockID, char name[32], FILE *f){
+
 	int hash = calculateHash(name);
 	int lastIndex = lastHashIndex[hash];
 	int count = 0;
 	int t;
 	struct DogType reg;
 
-	if (lastIndex == -1)
-	{
-		printf("---------------------------------------------------------------------------\n");
-		printf("NO EXISTEN REGISTROS CON EL NOMBRE %s\n", name);
-		printf("---------------------------------------------------------------------------\n\n");
-	}
-	else{
+	if (lastIndex != -1){
 		while(lastIndex != -1){
 			findByIndex(&reg, lastIndex, f);
 			if (strcmp(reg.name, name) == 0){
@@ -532,6 +510,7 @@ void findByName(int* sockID, char name[32], FILE *f){
 			}
 			lastIndex = reg.prevHashIndex;
 		}
+
 		t = send(sockID, &count, sizeof(int), 0);
 		lastIndex = lastHashIndex[hash];
 		if(t == -1){
@@ -549,20 +528,16 @@ void findByName(int* sockID, char name[32], FILE *f){
 			}
 			lastIndex = reg.prevHashIndex;
 		}
-		if (count != 0)
-		{
-			printf("---------------------------------------------------------------------------\n");
-			printf("HAY %d REGISTRO/S CON EL NOMBRE %s\n", count, name);
-			printf("---------------------------------------------------------------------------\n\n");
-		}
-		else
-		{
-			printf("---------------------------------------------------------------------------\n");
-			printf("NO EXISTEN REGISTROS CON EL NOMBRE %s\n", name);
-			printf("---------------------------------------------------------------------------\n\n");
+	}else{
+		count = 0;
+		t = send(sockID, &count, sizeof(int), 0);
+		lastIndex = lastHashIndex[hash];
+		if(t == -1){
+			perror("Error Enviando Count");
 		}
 	}
 }
+
 void writeInt(int *write)
 {
 	FILE *f;
@@ -583,6 +558,7 @@ void writeInt(int *write)
 	}
 	fclose(f);
 }
+
 int readInt()
 {
 	FILE *f;
@@ -609,7 +585,22 @@ int readInt()
 		return 0;
 	}
 }
-void executeOption(int* sockId, int menuOption){
+
+void executeOption(int* sockId, int menuOption, char *ipstr){
+
+	FILE *log;
+
+	log = fopen("serverDogs.log", "ab+");
+	if(log == NULL){
+		perror("Error abriendo log file");
+	}
+
+	time_t timeinfo = time(NULL);
+	struct tm tm = *localtime(&timeinfo);
+	char date[80];
+	char time[80];
+	strftime(date, 80 ,"%Y%m%d", &tm);	
+
 	switch(menuOption){
 		case 1:
 			readHash();
@@ -630,6 +621,9 @@ void executeOption(int* sockId, int menuOption){
 
 			writeHash();
 			readHash();
+
+			strftime(time, 80 ,"%H%M%S", &tm);	
+			fprintf(log, "[%sT%s] Cliente[%s][insercion][%d]\n", date, time, ipstr, REGISTROS);
 			break;
 
 		case 2:
@@ -647,34 +641,39 @@ void executeOption(int* sockId, int menuOption){
 				perror("Could not open a file");
 				exit(-1);
 			}
-			
+
 			findByIndex(&searchedReg, data2, f);
+
+			strftime(time, 80 ,"%H%M%S", &tm);	
+			fprintf(log, "[%sT%s] Cliente[%s][lectura][%d]\n", date, time, ipstr, (data2 + 1));
+
 			v = send(sockId, &searchedReg, sizeof(struct DogType), 0);
 			if(v ==-1){
 				perror("Error Enviando estructura ");
 			}
 			close(f);
+
 			v =  recv(sockId, &hist, sizeof(int), 0);
 			if(v ==-1){
 				perror("Error recibiendo Opcion historia clinica");
 			}
-			printf("historia  %d\n", hist);
+
 			if(hist == 1){
-				printf("Si historia clinica\n");
 				int number = data2;
 				if (searchedReg.medicalHistoryID == -1){
-						printf("Medical %d, data2 %d\n", medicalCreated, data2);
+						//printf("Medical %d, data2 %d\n", medicalCreated, data2);
 						data2 = medicalCreated;
 						searchedReg.medicalHistoryID = medicalCreated;
 						medicalCreated++;
-						printf("Medical %d, data2 %d\n", medicalCreated, data2);
+						writeInt(&medicalCreated);
+						//printf("Medical %d, data2 %d\n", medicalCreated, data2);
 						int d = fseek(f, number * sizeof(struct DogType), SEEK_SET);
 						if (d == -1)
 						{
 							printf("error al mover al index\n");
 						}
 						int r = fwrite(&searchedReg, sizeof(struct DogType), 1, f);
-						printf("escritos %d\n", r);
+						//printf("escritos %d\n", r);
 						if (r == 0)
 						{
 							perror("Could not write Struct");
@@ -702,14 +701,12 @@ void executeOption(int* sockId, int menuOption){
 					sprintf(fileNameNumber, "%d", data2);
 					strcat(fileName, fileNameNumber);
 					strcat(fileName, ".txt");
-					printf("path %s\n", fileName);
 					if (!(access(fileName, F_OK) != -1))
 					{
 
 						FILE *g = fopen(fileName, "w");
 
 						if (g == NULL){
-							printf("Error opening file!\n");
 							exit(1);
 						}
 
@@ -739,7 +736,6 @@ void executeOption(int* sockId, int menuOption){
 						char sendbuffer[1024] = "";
 						int b = fread(sendbuffer, 1, sizeof(sendbuffer), fp);
 						if( b > 0){
-							printf("Enviando\n");
 							v = send(sockId, sendbuffer, b, 0);
 							if(v ==-1){
 								perror("Error Enviando estructura ");
@@ -748,16 +744,11 @@ void executeOption(int* sockId, int menuOption){
 						if(b < 1024){
 							if(feof(fp)){
 								int flag = -1;
-								printf("Fin archivo");
-								
 							}
 							break;
 						}
 					}
-					
-
 					fclose(fp);
-					printf("Termino\n\n");
 					
 					int b = 0;
 					char recBuf[1024] = "";
@@ -773,20 +764,31 @@ void executeOption(int* sockId, int menuOption){
 
 					fclose(t);
 			}
+
 			break;
 		case 3:
 			printf("");
 			int data3;
+
 			v =  recv(sockId, &data3, sizeof(int), 0);
 			if(v ==-1){
 				perror("Error recibiendo index ");
 			}
-			eraseFunction(REGISTROS, data3);
+
+			int functionStatus = eraseFunction(REGISTROS, data3);
+			v = send(sockId, &functionStatus, sizeof(int), 0);
+			if(v == -1){
+				perror("Error Enviando confirmacion ");
+			}
+
 			int confirm = REGISTROS;
 			v = send(sockId, &confirm, sizeof(int), 0);
 			if(v == -1){
 				perror("Error Enviando confirmacion ");
 			}
+
+			strftime(time, 80 ,"%H%M%S", &tm);	
+			fprintf(log, "[%sT%s] Cliente[%s][borrado][%d]\n", date, time, ipstr, (data3 + 1));
 
 			break;
 		case 4:
@@ -805,14 +807,19 @@ void executeOption(int* sockId, int menuOption){
 			}
 			findByName(sockId, data4, g);
 			close(g);
+
+			strftime(time, 80 ,"%H%M%S", &tm);	
+			fprintf(log, "[%sT%s] Cliente[%s][busqueda][%s]\n", date, time, ipstr, data4);
+
 			break;
 		case 5:
-			printf("\nentro a caso 5\n");
 			break;
 		default:
-			printf("Desfault\n");
+			printf("Default\n");
 			break;
 	}
+
+	fclose(log);
 }
 
 
@@ -820,12 +827,11 @@ int main(){
 
 	clearScreen();
 	printf("---------------------------------------------------------------------------\n");
-	printf("CARGANDO PROGRAMA ...\n");
+	printf("CARGANDO DATOS ...\n");
 	printf("---------------------------------------------------------------------------\n");
-	printf("leyendo int\n");
 	medicalCreated = readInt();
 	readHash();
-	printf("Arbiendo archivo\n");
+
 	FILE *f;
 	f = fopen("dataDogs.dat", "rb+");
 
@@ -855,7 +861,6 @@ int main(){
 
 	//Bind del server
 	tama = sizeof( struct sockaddr_in);
-	printf("Bind\n");
 	r = bind(fd, (struct sockaddr_in*)&server, tama);
 
 	if(r == -1){
@@ -863,38 +868,26 @@ int main(){
 	}
 
 	//Listen del server
-	printf("Listen\n");
 	r = listen(fd, BACKLOG);
 	if(r == -1){
 		perror("error en listen");
 	}
 
-	printf("Waiting\n");
+	printf("ESPERANDO CONEXION\n");
 
 	//Conexion con un cliente 
 	tamaClient = 0;
-	//fd1 = accept(fd, (struct sockaddr_in*)&client1, &tamaClient);
 	int b;
 	fd1  = accept(fd, (struct sockaddr_in*)&client1, &tamaClient);
 	if(fd1 <= 0){
 		perror("Error en accept");
 	}
-	/*
-	while(recv(fd1, &b, sizeof(b), 0)){
-		
-		if(r ==-1){
-			perror("Error recibiendo opcion ");
-		}else if(b == -1){
-			break;
-		}else{
-			printf(" %d\n",b);
-		}
-	}
-	*/
 
-	clearScreen();
-	printf("\nBIENVENIDO USUARIO\n");
-
+	printf("---------------------------------------------------------------------------\n");
+	printf("CONEXION ESTABLECIDA\n");
+	printf("---------------------------------------------------------------------------\n");
+	char ipstr[INET_ADDRSTRLEN];
+	inet_ntop( AF_INET, &client1.sin_addr, ipstr, INET_ADDRSTRLEN );
 	r = send(fd1, &REGISTROS, sizeof(REGISTROS), 0);
 	if(r == -1 ){
 		perror("Error al enviar cantidad de registros");
@@ -905,25 +898,16 @@ int main(){
 		if(r == -1){
 			perror("Error al recibir opcion");
 		}
-		
-		printf("Opcion selecionada %d\n", b);
-		executeOption(fd1, b);
+
+		executeOption(fd1, b, ipstr);
 		if(b == 5){
 			break;
 		}
 	}
 
-	
-
 	writeInt(&medicalCreated);
-	clearScreen();
-	printf("---------------------------------------------------------------------------\n");
-	printf("Finalizando programa ...\n");
-	printf("---------------------------------------------------------------------------\n");
 	fclose(f);
 	close(fd1);
 	close(fd);
-	pauseShell();
-
 	return 0;
 }
