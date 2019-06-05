@@ -36,7 +36,7 @@ void clearScreen()
 void pauseShell()
 {
 #if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
-	printf("Presione cualquier tecla para continuar...");
+	printf("Presione cualquier tecla para continuar...\n");
 	int ch;
     struct termios oldt, newt;
     tcgetattr ( STDIN_FILENO, &oldt );
@@ -334,6 +334,16 @@ int main(){
 	int menuOption = executeMenu();
 	while (menuOption != 5)
 	{
+		/*
+		int regs;
+		int v =  recv(fd, &regs, sizeof(int), 0);
+		if(v ==-1){
+			perror("Error recibiendo index ");
+		}
+
+		REGISTROS = regs;
+		printf("recv: %d\n", REGISTROS);
+		*/
 		clearScreen();
 		switch (menuOption)
 		{
@@ -455,13 +465,11 @@ int main(){
 			printf("height: %d\n", newReg->height);
 			printf("weight: %.2lf\n", newReg->weight);
 			printf("sex: %c\n", newReg->sex);
-			
 
 			pauseShell();
 			break;
 
 		case 2:
-
 			printf("---------------------------------------------------------------------------\n");
 			printf("VER REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n");
@@ -535,24 +543,27 @@ int main(){
 						}
 					}
 				} while (true);
+
 				int c = 1;
                 if (clinicHystoryOption[0] == 'Y' || clinicHystoryOption[0] == 'y'){
+
 					r = send(fd, &c , sizeof(int), 0);
 					if(r == -1){
 						perror("Error Enviando opcion Historia clinica");
 					}
+				
+					int idThread;
+					int v = recv(fd, &idThread, sizeof(int), 0);
+					if(v == -1){
+						perror("Error recibiendo");
+					}
 
 					char fileId[256];
 					char path[] = "temporal";
-					sprintf(fileId, "%d", fd);
-					printf("%d\n", fd);
+					sprintf(fileId, "%d", idThread);
 					strcat(path, fileId);
 					strcat(path, ".txt");
-					int status = remove(path);
-					if (status == 0)
-					{
-						//printf("Temporal file deleted\n");
-					}
+					
 										
 					int b = 0;
 					FILE* t;
@@ -572,8 +583,6 @@ int main(){
 
 					fclose(t);
 					openFile(path);
-
-					pauseShell();
 
 					FILE *fp = fopen(path, "ab+");
 					char rbuff[1024] = "";
@@ -598,7 +607,13 @@ int main(){
 							break;
 						}
 					}
-
+					fclose(fp);
+					int status = remove(path);
+					if (status == 0)
+					{
+						printf("Temporal file deleted\n");
+					}
+					pauseShell();
 				}else{
 					c = 0;
 					r = send(fd, &c , sizeof(int), 0);
@@ -694,12 +709,6 @@ int main(){
 					printf("---------------------------------------------------------------------------\n");
 				}
 				
-				int currentRegs;
-				r = recv(fd, &currentRegs, sizeof(int), 0);
-				if(r ==-1){
-					perror("Error recibiendo Confirmacion");
-				}
-				REGISTROS = currentRegs;
 			}
 			else
 			{
@@ -798,10 +807,7 @@ int main(){
 		clearScreen();
 		menuOption = executeMenu();
 	}
-	r = send(fd, &menuOption, sizeof(int), 0);
-			if(r ==-1){
-				perror("Error Enviando opcion de menu ");
-			}
+
 	//writeInt(&medicalCreated);
 	close(fd);
 	clearScreen();

@@ -53,6 +53,12 @@ struct DogType
 	int medicalHistoryID;
 };
 
+struct ThreadParameters{
+	int socketDescriptor;
+	struct sockaddr_in socketStruct;
+	char ip[INET_ADDRSTRLEN];
+};
+
 int writeRegister(void *ap, int position)
 {
 
@@ -82,17 +88,29 @@ void findByIndex(struct DogType *ap, int index, FILE *f)
 {
 
 	struct DogType reg;
-	int d = fseek(f, index * sizeof(struct DogType), SEEK_SET);
+
+	int d = fseek(f, 0 * sizeof(struct DogType), SEEK_SET);
+	if (d == -1)
+	{
+		printf("error al mover al index\n");
+	}
+	d = fseek(f, index * sizeof(struct DogType), SEEK_SET);
 	if (d == -1)
 	{
 		printf("error al mover al index\n");
 	}
 
 	int r = fread(&reg, sizeof(struct DogType), 1, f);
-	if (r == 0)
-	{
+
+	if (r == 0){
 		perror("Could no read structure");
 		exit(-1);
+	}
+
+	 d = fseek(f, 0 * sizeof(struct DogType), SEEK_SET);
+	if (d == -1)
+	{
+		printf("error al mover al index\n");
 	}
 
 	strcpy(ap->name, reg.name);
@@ -403,7 +421,6 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 	switch(menuOption){
 		case 1:
 			readHash();
-
 			struct DogType newReg;
 			
 			int v = recv(sockId, &newReg, sizeof(struct DogType), 0);
@@ -427,6 +444,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 
 		case 2:
 			printf("");
+
 			int data2, hist;
 			struct DogType searchedReg;
 			v =  recv(sockId, &data2, sizeof(int), 0);
@@ -456,41 +474,56 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			if(v ==-1){
 				perror("Error recibiendo Opcion historia clinica");
 			}
-
+			fclose(f);
 			if(hist == 1){
+				int id = sockId;
+				v = send(sockId, &id, sizeof(int), 0);
+				if(v ==-1){
+					perror("Error Enviando estructura ");
+				}
 				medicalCreated = readInt();
 				int number = data2;
 				if (searchedReg.medicalHistoryID == -1){
+						FILE *h;
+						h = fopen("dataDogs.dat", "rb+");
 						//printf("Medical %d, data2 %d\n", medicalCreated, data2);
 						data2 = medicalCreated;
 						searchedReg.medicalHistoryID = medicalCreated;
 						medicalCreated++;
 						writeInt(&medicalCreated);
-						//printf("Medical %d, data2 %d\n", medicalCreated, data2);
-						int d = fseek(f, number * sizeof(struct DogType), SEEK_SET);
+
+						int d = fseek(h, 0 * sizeof(struct DogType), SEEK_SET);
+						if (d == -1)
+						{
+							printf("error al regresar al inicio \n");
+						}
+
+						 d = fseek(h, number * sizeof(struct DogType), SEEK_SET);
 						if (d == -1)
 						{
 							printf("error al mover al index\n");
 						}
-						int r = fwrite(&searchedReg, sizeof(struct DogType), 1, f);
-						//printf("escritos %d\n", r);
+						int r = fwrite(&searchedReg, sizeof(struct DogType), 1, h);
+						
 						if (r == 0)
 						{
 							perror("Could not write Struct");
 							exit(-1);
 						}
-						d = fseek(f, 0 * sizeof(struct DogType), SEEK_SET);
+						d = fseek(h, 0 * sizeof(struct DogType), SEEK_SET);
 						if (d == -1)
 						{
 							printf("error al regresar al inicio \n");
 						}
-						fclose(f);
-						f = fopen("dataDogs.dat", "rb+");
+						fclose(h);
+						
 						if (f == NULL)
 						{
 							perror("Could not open a file");
 							exit(-1);
 						}
+
+						medicalCreated = readInt();
 					}
 					else{
 						data2 = searchedReg.medicalHistoryID;
@@ -509,6 +542,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 						FILE *g = fopen(fileName, "w");
 
 						if (g == NULL){
+							perror("Creen la carpeta primero impedidos\n");
 							exit(1);
 						}
 
@@ -550,8 +584,9 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 							break;
 						}
 					}
+					
 					fclose(fp);
-					printf("%d\n",sockId);
+
 					int b = 0;
 					char recBuf[1024] = "";
 					FILE* t = fopen(fileName, "w");
@@ -570,6 +605,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			break;
 		case 3:
 			printf("");
+
 			int data3;
 
 			v =  recv(sockId, &data3, sizeof(int), 0);
@@ -579,12 +615,6 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 
 			int functionStatus = eraseFunction(REGISTROS, data3);
 			v = send(sockId, &functionStatus, sizeof(int), 0);
-			if(v == -1){
-				perror("Error Enviando confirmacion ");
-			}
-
-			int confirm = REGISTROS;
-			v = send(sockId, &confirm, sizeof(int), 0);
 			if(v == -1){
 				perror("Error Enviando confirmacion ");
 			}
@@ -624,9 +654,10 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 	fclose(log);
 }
 
-void *connection_handler(void *socket_desc, struct sockaddr_in client1){
+void *connection_handler(void *client){
 	
-	int fd1 = *(int*)socket_desc;
+	struct ThreadParameters client1 =  *(struct ThreadParameters *)client;
+	int fd1 = client1.socketDescriptor;
 	int b;
 	FILE *f;
 	f = fopen("dataDogs.dat", "rb+");
@@ -642,21 +673,26 @@ void *connection_handler(void *socket_desc, struct sockaddr_in client1){
 	printf("---------------------------------------------------------------------------\n");
 	printf("CONEXION ESTABLECIDA\n");
 	printf("---------------------------------------------------------------------------\n");
-	
-	char ipstr[INET_ADDRSTRLEN];
-	inet_ntop( AF_INET, &client1.sin_addr, ipstr, INET_ADDRSTRLEN );
+
 	int r = send(fd1, &REGISTROS, sizeof(REGISTROS), 0);
 	if(r == -1 ){
 		perror("Error al enviar cantidad de registros");
 	}
 	
 	while(1){
+		/*
+		int regs = REGISTROS;
+		int v = send(fd1, &regs, sizeof(int), 0);
+		if(v == -1){
+			perror("Error Enviando confirmacion ");
+		}
+		*/
 		r = recv(fd1, &b, sizeof(b), 0);
 		if(r == -1){
 			perror("Error al recibir opcion");
 		}
 
-		executeOption(fd1, b, ipstr);
+		executeOption(fd1, b, client1.ip);
 		if(b == 5){
 			break;
 		}
@@ -667,12 +703,6 @@ void *connection_handler(void *socket_desc, struct sockaddr_in client1){
 	close(fd1);
 	
 }
-
-struct ThreadParameters{
-	int socketDescriptor;
-	struct sockaddr_in socketStruct;
-};
-
 
 int main(){
 
@@ -723,8 +753,14 @@ int main(){
 	while(fd1  = accept(fd, (struct sockaddr_in*)&client1, &tamaClient)){
 		struct ThreadParameters *client =  malloc(sizeof(struct ThreadParameters));
 
+		char ipstr[INET_ADDRSTRLEN];
+		inet_ntop( AF_INET, &client1.sin_addr, ipstr, INET_ADDRSTRLEN );
+		//printf("ip: %s\n", ipstr);
+		
 		client->socketDescriptor = fd1;
 		client->socketStruct = client1;
+		strcpy(client->ip,  ipstr);
+		
 		if( pthread_create( &thread_id , NULL , connection_handler , (void*) client) < 0){
 			perror("could not create thread");
 		}
