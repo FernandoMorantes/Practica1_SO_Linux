@@ -37,6 +37,7 @@ int REGISTROS;
 int HASHSIZE = 1999;
 int lastHashIndex[2000];
 int medicalCreated = 0;
+int confirmSignal = 1;
 
 struct DogType
 {
@@ -421,9 +422,15 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 	switch(menuOption){
 		case 1:
 			readHash();
+
+			int v = send(sockId, &REGISTROS, sizeof(int), 0);
+			if(v == -1){
+				perror("Error Enviando confirmacion ");
+			}
+
 			struct DogType newReg;
 			
-			int v = recv(sockId, &newReg, sizeof(struct DogType), 0);
+			v = recv(sockId, &newReg, sizeof(struct DogType), 0);
 			if(v ==-1){
 				perror("Error recibiendo struct ");
 			}
@@ -445,183 +452,208 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 		case 2:
 			printf("");
 
-			int data2, hist;
-			struct DogType searchedReg;
-			v =  recv(sockId, &data2, sizeof(int), 0);
-			if(v ==-1){
-				perror("Error recibiendo index ");
-			}
-			FILE *f;
-			f = fopen("dataDogs.dat", "rb+");
-
-			if (f == NULL){
-				perror("Could not open a file");
-				exit(-1);
-			}
-
-			findByIndex(&searchedReg, data2, f);
-
-			strftime(time, 80 ,"%H%M%S", &tm);	
-			fprintf(log, "[%sT%s] Cliente[%s][lectura][%d]\n", date, time, ipstr, (data2 + 1));
-
-			v = send(sockId, &searchedReg, sizeof(struct DogType), 0);
-			if(v ==-1){
-				perror("Error Enviando estructura ");
-			}
-			close(f);
-
-			v =  recv(sockId, &hist, sizeof(int), 0);
-			if(v ==-1){
-				perror("Error recibiendo Opcion historia clinica");
-			}
-			fclose(f);
-			if(hist == 1){
-				int id = sockId;
-				v = send(sockId, &id, sizeof(int), 0);
-				if(v ==-1){
-					perror("Error Enviando estructura ");
-				}
-				medicalCreated = readInt();
-				int number = data2;
-				if (searchedReg.medicalHistoryID == -1){
-						FILE *h;
-						h = fopen("dataDogs.dat", "rb+");
-						//printf("Medical %d, data2 %d\n", medicalCreated, data2);
-						data2 = medicalCreated;
-						searchedReg.medicalHistoryID = medicalCreated;
-						medicalCreated++;
-						writeInt(&medicalCreated);
-
-						int d = fseek(h, 0 * sizeof(struct DogType), SEEK_SET);
-						if (d == -1)
-						{
-							printf("error al regresar al inicio \n");
-						}
-
-						 d = fseek(h, number * sizeof(struct DogType), SEEK_SET);
-						if (d == -1)
-						{
-							printf("error al mover al index\n");
-						}
-						int r = fwrite(&searchedReg, sizeof(struct DogType), 1, h);
-						
-						if (r == 0)
-						{
-							perror("Could not write Struct");
-							exit(-1);
-						}
-						d = fseek(h, 0 * sizeof(struct DogType), SEEK_SET);
-						if (d == -1)
-						{
-							printf("error al regresar al inicio \n");
-						}
-						fclose(h);
-						
-						if (f == NULL)
-						{
-							perror("Could not open a file");
-							exit(-1);
-						}
-
-						medicalCreated = readInt();
-					}
-					else{
-						data2 = searchedReg.medicalHistoryID;
-					}
-					char fileName[256] = "Historias_clinicas/";
-					char fileNameNumber[256];
-					
-
-					sprintf(fileNameNumber, "%d", data2);
-					
-					strcat(fileName, fileNameNumber);
-					strcat(fileName, ".txt");
-					if (!(access(fileName, F_OK) != -1))
-					{
-
-						FILE *g = fopen(fileName, "w");
-
-						if (g == NULL){
-							perror("Creen la carpeta primero impedidos\n");
-							exit(1);
-						}
-
-						fprintf(g, "---------------------------------------------------------------------------\n");
-						fprintf(g, "Datos del paciente\n");
-						fprintf(g, "\nname: %s\n", searchedReg.name);
-						fprintf(g, "type: %s\n", searchedReg.type);
-						fprintf(g, "age: %d\n", searchedReg.age);
-						fprintf(g, "breed: %s\n", searchedReg.breed);
-						fprintf(g, "height: %d\n", searchedReg.height);
-						fprintf(g, "weight: %.2f\n", searchedReg.weight);
-						fprintf(g, "sex: %c\n", searchedReg.sex);
-						fprintf(g, "---------------------------------------------------------------------------\n");
-						fprintf(g, "Historia clinica: ");
-
-						fclose(g);
-					}
-
-					FILE *fp = fopen(fileName, "ab+");
-
-					if(fp == NULL){
-						perror("File");
-						return 2;
-					}
-
-					while(1){
-						char sendbuffer[1024] = "";
-						int b = fread(sendbuffer, 1, sizeof(sendbuffer), fp);
-						if( b > 0){
-							v = send(sockId, sendbuffer, b, 0);
-							if(v ==-1){
-								perror("Error Enviando estructura ");
-							}
-						}
-						if(b < 1024){
-							if(feof(fp)){
-								int flag = -1;
-							}
-							break;
-						}
-					}
-					
-					fclose(fp);
-
-					int b = 0;
-					char recBuf[1024] = "";
-					FILE* t = fopen(fileName, "w");
-					if(t == NULL){
-						perror("Abriendo archivo");
-					}
-
-					do{
-						b = recv(sockId, recBuf, 1024, 0);
-						fprintf(t, "%s", recBuf);
-					}while(b == 1024);
-
-					fclose(t);
-			}
-
-			break;
-		case 3:
-			printf("");
-
-			int data3;
-
-			v =  recv(sockId, &data3, sizeof(int), 0);
-			if(v ==-1){
-				perror("Error recibiendo index ");
-			}
-
-			int functionStatus = eraseFunction(REGISTROS, data3);
-			v = send(sockId, &functionStatus, sizeof(int), 0);
+			v = send(sockId, &REGISTROS, sizeof(int), 0);
 			if(v == -1){
 				perror("Error Enviando confirmacion ");
 			}
 
-			strftime(time, 80 ,"%H%M%S", &tm);	
-			fprintf(log, "[%sT%s] Cliente[%s][borrado][%d]\n", date, time, ipstr, (data3 + 1));
+			v = recv(sockId, &confirmSignal, sizeof(int), 0);
+			if(v ==-1){
+				perror("Error recibiendo struct ");
+			}
 
+			if(confirmSignal == 1){
+				int data2, hist;
+				struct DogType searchedReg;
+				v =  recv(sockId, &data2, sizeof(int), 0);
+				if(v ==-1){
+					perror("Error recibiendo index ");
+				}
+				FILE *f;
+				f = fopen("dataDogs.dat", "rb+");
+
+				if (f == NULL){
+					perror("Could not open a file");
+					exit(-1);
+				}
+
+				findByIndex(&searchedReg, data2, f);
+
+				strftime(time, 80 ,"%H%M%S", &tm);	
+				fprintf(log, "[%sT%s] Cliente[%s][lectura][%d]\n", date, time, ipstr, (data2 + 1));
+
+				v = send(sockId, &searchedReg, sizeof(struct DogType), 0);
+				if(v ==-1){
+					perror("Error Enviando estructura ");
+				}
+				close(f);
+
+				v =  recv(sockId, &hist, sizeof(int), 0);
+				if(v ==-1){
+					perror("Error recibiendo Opcion historia clinica");
+				}
+				fclose(f);
+				if(hist == 1){
+					int id = sockId;
+					v = send(sockId, &id, sizeof(int), 0);
+					if(v ==-1){
+						perror("Error Enviando estructura ");
+					}
+					medicalCreated = readInt();
+					int number = data2;
+					if (searchedReg.medicalHistoryID == -1){
+							FILE *h;
+							h = fopen("dataDogs.dat", "rb+");
+							//printf("Medical %d, data2 %d\n", medicalCreated, data2);
+							data2 = medicalCreated;
+							searchedReg.medicalHistoryID = medicalCreated;
+							medicalCreated++;
+							writeInt(&medicalCreated);
+
+							int d = fseek(h, 0 * sizeof(struct DogType), SEEK_SET);
+							if (d == -1)
+							{
+								printf("error al regresar al inicio \n");
+							}
+
+							d = fseek(h, number * sizeof(struct DogType), SEEK_SET);
+							if (d == -1)
+							{
+								printf("error al mover al index\n");
+							}
+							int r = fwrite(&searchedReg, sizeof(struct DogType), 1, h);
+							
+							if (r == 0)
+							{
+								perror("Could not write Struct");
+								exit(-1);
+							}
+							d = fseek(h, 0 * sizeof(struct DogType), SEEK_SET);
+							if (d == -1)
+							{
+								printf("error al regresar al inicio \n");
+							}
+							fclose(h);
+							
+							if (f == NULL)
+							{
+								perror("Could not open a file");
+								exit(-1);
+							}
+
+							medicalCreated = readInt();
+						}
+						else{
+							data2 = searchedReg.medicalHistoryID;
+						}
+						char fileName[256] = "Historias_clinicas/";
+						char fileNameNumber[256];
+						
+
+						sprintf(fileNameNumber, "%d", data2);
+						
+						strcat(fileName, fileNameNumber);
+						strcat(fileName, ".txt");
+						if (!(access(fileName, F_OK) != -1))
+						{
+
+							FILE *g = fopen(fileName, "w");
+
+							if (g == NULL){
+								perror("Creen la carpeta primero impedidos\n");
+								exit(1);
+							}
+
+							fprintf(g, "---------------------------------------------------------------------------\n");
+							fprintf(g, "Datos del paciente\n");
+							fprintf(g, "\nname: %s\n", searchedReg.name);
+							fprintf(g, "type: %s\n", searchedReg.type);
+							fprintf(g, "age: %d\n", searchedReg.age);
+							fprintf(g, "breed: %s\n", searchedReg.breed);
+							fprintf(g, "height: %d\n", searchedReg.height);
+							fprintf(g, "weight: %.2f\n", searchedReg.weight);
+							fprintf(g, "sex: %c\n", searchedReg.sex);
+							fprintf(g, "---------------------------------------------------------------------------\n");
+							fprintf(g, "Historia clinica: ");
+
+							fclose(g);
+						}
+
+						FILE *fp = fopen(fileName, "ab+");
+
+						if(fp == NULL){
+							perror("File");
+							return 2;
+						}
+
+						while(1){
+							char sendbuffer[1024] = "";
+							int b = fread(sendbuffer, 1, sizeof(sendbuffer), fp);
+							if( b > 0){
+								v = send(sockId, sendbuffer, b, 0);
+								if(v ==-1){
+									perror("Error Enviando estructura ");
+								}
+							}
+							if(b < 1024){
+								if(feof(fp)){
+									int flag = -1;
+								}
+								break;
+							}
+						}
+						
+						fclose(fp);
+
+						int b = 0;
+						char recBuf[1024] = "";
+						FILE* t = fopen(fileName, "w");
+						if(t == NULL){
+							perror("Abriendo archivo");
+						}
+
+						do{
+							b = recv(sockId, recBuf, 1024, 0);
+							fprintf(t, "%s", recBuf);
+						}while(b == 1024);
+
+						fclose(t);
+				}
+
+			}
+			
+			break;
+		case 3:
+			printf("");
+
+			v = send(sockId, &REGISTROS, sizeof(int), 0);
+			if(v == -1){
+				perror("Error Enviando confirmacion ");
+			}
+
+			v = recv(sockId, &confirmSignal, sizeof(int), 0);
+			if(v ==-1){
+				perror("Error recibiendo struct ");
+			}
+
+			if(confirmSignal == 1){
+				int data3;
+
+				v =  recv(sockId, &data3, sizeof(int), 0);
+				if(v ==-1){
+					perror("Error recibiendo index ");
+				}
+
+				int functionStatus = eraseFunction(REGISTROS, data3);
+				v = send(sockId, &functionStatus, sizeof(int), 0);
+				if(v == -1){
+					perror("Error Enviando confirmacion ");
+				}
+
+				strftime(time, 80 ,"%H%M%S", &tm);	
+				fprintf(log, "[%sT%s] Cliente[%s][borrado][%d]\n", date, time, ipstr, (data3 + 1));
+			}
+			
 			break;
 		case 4:
 			printf("");
@@ -679,14 +711,7 @@ void *connection_handler(void *client){
 		perror("Error al enviar cantidad de registros");
 	}
 	
-	while(1){
-		/*
-		int regs = REGISTROS;
-		int v = send(fd1, &regs, sizeof(int), 0);
-		if(v == -1){
-			perror("Error Enviando confirmacion ");
-		}
-		*/
+	while(1){		
 		r = recv(fd1, &b, sizeof(b), 0);
 		if(r == -1){
 			perror("Error al recibir opcion");

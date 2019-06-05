@@ -69,6 +69,8 @@ int REGISTROS;
 int HASHSIZE = 1999;
 int lastHashIndex[2000];
 int medicalCreated = 0;
+int errorSignal = -1;
+int confirmSignal = 1;
 
 struct DogType
 {
@@ -330,24 +332,26 @@ int main(){
 		clearScreen();
 		printf("\nBIENVENIDO USUARIO\n");
 	}
-	
+
 	int menuOption = executeMenu();
 	while (menuOption != 5)
-	{
-		/*
-		int regs;
-		int v =  recv(fd, &regs, sizeof(int), 0);
-		if(v ==-1){
-			perror("Error recibiendo index ");
-		}
-
-		REGISTROS = regs;
-		printf("recv: %d\n", REGISTROS);
-		*/
+	{	
 		clearScreen();
 		switch (menuOption)
 		{
 		case 1:
+			printf("");
+
+			r = send(fd, &menuOption, sizeof(int), 0);
+			if(r ==-1){
+				perror("Error Enviando opcion de menu ");
+			}
+
+			r =  recv(fd, &REGISTROS, sizeof(int), 0);
+			if(r ==-1){
+				perror("Error recibiendo index ");
+			}
+
 			printf("---------------------------------------------------------------------------\n");
 			printf("INGRESAR REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n\n");
@@ -438,11 +442,6 @@ int main(){
 			newReg->deleted = false;
 			newReg->index = REGISTROS;
 			newReg->medicalHistoryID = -1;
-
-			r = send(fd, &menuOption, sizeof(int), 0);
-			if(r ==-1){
-				perror("Error Enviando opcion de menu ");
-			}
 			
 			pauseShell();
 
@@ -470,6 +469,18 @@ int main(){
 			break;
 
 		case 2:
+			printf("");
+
+			r = send(fd, &menuOption, sizeof(int), 0);
+			if(r ==-1){
+				perror("Error Enviando opcion de menu ");
+			}
+
+			r =  recv(fd, &REGISTROS, sizeof(int), 0);
+			if(r ==-1){
+				perror("Error recibiendo index ");
+			}
+			
 			printf("---------------------------------------------------------------------------\n");
 			printf("VER REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n");
@@ -494,7 +505,8 @@ int main(){
 			sscanf(numberInput, "%d", &regNumber);
 
 			if (regNumber > 0 && regNumber <= REGISTROS){
-				r = send(fd, &menuOption, sizeof(int), 0);
+				confirmSignal = 1;
+				r = send(fd, &confirmSignal, sizeof(int), 0);
 				if(r ==-1){
 					perror("Error Enviando opcion de menu ");
 				}
@@ -631,17 +643,37 @@ int main(){
 				printf("EL REGISTRO NUMERO %d NO EXISTE\n", regNumber);
 				printf("---------------------------------------------------------------------------\n");
 				pauseShell();
+				
+				confirmSignal = -1;
+				r = send(fd, &confirmSignal, sizeof(int), 0);
+				if(r ==-1){
+					perror("Error Enviando opcion de menu ");
+				}
+
 				clearScreen();
 			}
 
 			break;
 
 		case 3:
+			printf("");
+
+			r = send(fd, &menuOption, sizeof(int), 0);
+			if(r ==-1){
+				perror("Error Enviando opcion de menu ");
+			}
+
+			r =  recv(fd, &REGISTROS, sizeof(int), 0);
+			if(r ==-1){
+				perror("Error recibiendo index ");
+			}
+
 			printf("---------------------------------------------------------------------------\n");
 			printf("BORRAR REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n");
 			printf("NUMERO DE REGISTROS: %d\n", REGISTROS);
 			printf("---------------------------------------------------------------------------\n\n");
+
 
 			char deleteInput[MAXINPUT];
 			int regDeleteNumber;
@@ -665,7 +697,8 @@ int main(){
            
 			if (regDeleteNumber > 0 && regDeleteNumber <= REGISTROS)
 			{
-				r = send(fd, &menuOption, sizeof(int), 0);
+				confirmSignal = 1;
+				r = send(fd, &confirmSignal, sizeof(int), 0);
 				if(r ==-1){
 					perror("Error Enviando opcion de menu ");
 				}
@@ -716,6 +749,11 @@ int main(){
 				printf("---------------------------------------------------------------------------\n");
 				printf("EL REGISTRO NUMERO %d NO EXISTE\n", regDeleteNumber);
 				printf("---------------------------------------------------------------------------\n");
+				confirmSignal = -1;
+				r = send(fd, &confirmSignal, sizeof(int), 0);
+				if(r ==-1){
+					perror("Error Enviando opcion de menu ");
+				}
 			}
 
 			pauseShell();
@@ -793,7 +831,6 @@ int main(){
 			break;
 
 		case 5:
-			
 			break;
 
 		default:
@@ -801,13 +838,21 @@ int main(){
 			printf("OPCION NO VALIDA\n");
 			printf("---------------------------------------------------------------------------\n");
 
+			r = send(fd, &errorSignal, sizeof(int), 0);
+			if(r ==-1){
+				perror("Error Enviando señal de error ");
+			}
+
 			pauseShell();
 			break;
 		}
 		clearScreen();
 		menuOption = executeMenu();
 	}
-
+	r = send(fd, &menuOption, sizeof(int), 0);
+	if(r ==-1){
+		perror("Error Enviando opcion de menu ");
+	}
 	//writeInt(&medicalCreated);
 	close(fd);
 	clearScreen();
