@@ -595,7 +595,7 @@ int main(){
 
 					fclose(t);
 					openFile(path);
-
+					pauseShell();
 					FILE *fp = fopen(path, "ab+");
 					char rbuff[1024] = "";
 					if(fp == NULL){
@@ -620,12 +620,13 @@ int main(){
 						}
 					}
 					fclose(fp);
+					
 					int status = remove(path);
 					if (status == 0)
 					{
 						printf("Temporal file deleted\n");
 					}
-					pauseShell();
+					
 				}else{
 					c = 0;
 					r = send(fd, &c , sizeof(int), 0);
