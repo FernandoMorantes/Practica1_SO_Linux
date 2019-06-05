@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <termios.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -36,7 +37,14 @@ void pauseShell()
 {
 #if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
 	printf("Presione cualquier tecla para continuar...");
-	int c = getchar();
+	int ch;
+    struct termios oldt, newt;
+    tcgetattr ( STDIN_FILENO, &oldt );
+    newt = oldt;
+    newt.c_lflag &= ~( ICANON | ECHO );
+    tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
+    ch = getchar();
+    tcsetattr ( STDIN_FILENO, TCSANOW, &oldt );
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -534,8 +542,13 @@ int main(){
 						perror("Error Enviando opcion Historia clinica");
 					}
 
-					
-					int status = remove("temporal.txt");
+					char fileId[256];
+					char path[] = "temporal";
+					sprintf(fileId, "%d", fd);
+					printf("%d\n", fd);
+					strcat(path, fileId);
+					strcat(path, ".txt");
+					int status = remove(path);
 					if (status == 0)
 					{
 						//printf("Temporal file deleted\n");
@@ -545,7 +558,7 @@ int main(){
 					FILE* t;
 					char recBuf[1024] = "";
 
-					t = fopen("temporal.txt", "ab+");
+					t = fopen(path, "ab+");
 					
 					if(t == NULL){
 						perror("Abriendo archivo");
@@ -558,11 +571,11 @@ int main(){
 					}while(b == 1024);
 
 					fclose(t);
-					openFile("temporal.txt");
+					openFile(path);
 
 					pauseShell();
 
-					FILE *fp = fopen("temporal.txt", "ab+");
+					FILE *fp = fopen(path, "ab+");
 					char rbuff[1024] = "";
 					if(fp == NULL){
 						perror("File");

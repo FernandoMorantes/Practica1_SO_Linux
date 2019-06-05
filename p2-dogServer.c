@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include<pthread.h>
 
 #define MAXINPUT 256
 #define BACKLOG 32
@@ -496,8 +497,10 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 					}
 					char fileName[256] = "Historias_clinicas/";
 					char fileNameNumber[256];
+					
 
 					sprintf(fileNameNumber, "%d", data2);
+					
 					strcat(fileName, fileNameNumber);
 					strcat(fileName, ".txt");
 					if (!(access(fileName, F_OK) != -1))
@@ -548,7 +551,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 						}
 					}
 					fclose(fp);
-					
+					printf("%d\n",sockId);
 					int b = 0;
 					char recBuf[1024] = "";
 					FILE* t = fopen(fileName, "w");
@@ -621,16 +624,10 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 	fclose(log);
 }
 
-
-int main(){
-
-	clearScreen();
-	printf("---------------------------------------------------------------------------\n");
-	printf("CARGANDO DATOS ...\n");
-	printf("---------------------------------------------------------------------------\n");
-	medicalCreated = readInt();
-	readHash();
-
+void *connection_handler(void *socket_desc, struct sockaddr_in client1){
+	
+	int fd1 = *(int*)socket_desc;
+	int b;
 	FILE *f;
 	f = fopen("dataDogs.dat", "rb+");
 
@@ -641,6 +638,52 @@ int main(){
 
 	REGISTROS = countRecords(f);
 	close(f);
+
+	printf("---------------------------------------------------------------------------\n");
+	printf("CONEXION ESTABLECIDA\n");
+	printf("---------------------------------------------------------------------------\n");
+	
+	char ipstr[INET_ADDRSTRLEN];
+	inet_ntop( AF_INET, &client1.sin_addr, ipstr, INET_ADDRSTRLEN );
+	int r = send(fd1, &REGISTROS, sizeof(REGISTROS), 0);
+	if(r == -1 ){
+		perror("Error al enviar cantidad de registros");
+	}
+	
+	while(1){
+		r = recv(fd1, &b, sizeof(b), 0);
+		if(r == -1){
+			perror("Error al recibir opcion");
+		}
+
+		executeOption(fd1, b, ipstr);
+		if(b == 5){
+			break;
+		}
+	}
+
+	writeInt(&medicalCreated);
+	fclose(f);
+	close(fd1);
+	
+}
+
+struct ThreadParameters{
+	int socketDescriptor;
+	struct sockaddr_in socketStruct;
+};
+
+
+int main(){
+
+	clearScreen();
+	printf("---------------------------------------------------------------------------\n");
+	printf("CARGANDO DATOS ...\n");
+	printf("---------------------------------------------------------------------------\n");
+	medicalCreated = readInt();
+	readHash();
+
+	
 	struct sockaddr_in server, client1;
 	size_t tama, tamaClient;
 	int r;
@@ -676,37 +719,18 @@ int main(){
 
 	//Conexion con un cliente 
 	tamaClient = 0;
-	int b;
-	fd1  = accept(fd, (struct sockaddr_in*)&client1, &tamaClient);
-	if(fd1 <= 0){
-		perror("Error en accept");
-	}
+	pthread_t thread_id;
+	while(fd1  = accept(fd, (struct sockaddr_in*)&client1, &tamaClient)){
+		struct ThreadParameters *client =  malloc(sizeof(struct ThreadParameters));
 
-	printf("---------------------------------------------------------------------------\n");
-	printf("CONEXION ESTABLECIDA\n");
-	printf("---------------------------------------------------------------------------\n");
-	char ipstr[INET_ADDRSTRLEN];
-	inet_ntop( AF_INET, &client1.sin_addr, ipstr, INET_ADDRSTRLEN );
-	r = send(fd1, &REGISTROS, sizeof(REGISTROS), 0);
-	if(r == -1 ){
-		perror("Error al enviar cantidad de registros");
-	}
-	
-	while(1){
-		r = recv(fd1, &b, sizeof(b), 0);
-		if(r == -1){
-			perror("Error al recibir opcion");
+		client->socketDescriptor = fd1;
+		client->socketStruct = client1;
+		if( pthread_create( &thread_id , NULL , connection_handler , (void*) client) < 0){
+			perror("could not create thread");
 		}
+		
 
-		executeOption(fd1, b, ipstr);
-		if(b == 5){
-			break;
-		}
 	}
-
-	writeInt(&medicalCreated);
-	fclose(f);
-	close(fd1);
 	close(fd);
 	return 0;
 }
