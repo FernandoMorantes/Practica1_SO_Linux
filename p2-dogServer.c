@@ -93,12 +93,12 @@ void findByIndex(struct DogType *ap, int index, FILE *f)
 	int d = fseek(f, 0 * sizeof(struct DogType), SEEK_SET);
 	if (d == -1)
 	{
-		printf("error al mover al index\n");
+		perror("error al mover al index\n");
 	}
 	d = fseek(f, index * sizeof(struct DogType), SEEK_SET);
 	if (d == -1)
 	{
-		printf("error al mover al index\n");
+		perror("error al mover al index\n");
 	}
 
 	int r = fread(&reg, sizeof(struct DogType), 1, f);
@@ -111,7 +111,7 @@ void findByIndex(struct DogType *ap, int index, FILE *f)
 	 d = fseek(f, 0 * sizeof(struct DogType), SEEK_SET);
 	if (d == -1)
 	{
-		printf("error al mover al index\n");
+		perror("error al mover al index\n");
 	}
 
 	strcpy(ap->name, reg.name);
@@ -133,7 +133,7 @@ int countRecords(FILE *f)
 	r = fseek(f, 0 * sizeof(struct DogType), SEEK_SET);
 	if (r == -1)
 	{
-		printf("error al mover al index\n");
+		perror("error al mover al index\n");
 	}
 	struct DogType perro = {"", "", 0, "", 0, 0.0, 'f', 0, 0};
 	int count = 0;
@@ -161,7 +161,7 @@ void writeHash()
 	int status = remove("hash.dat");
 	if (status == 0)
 	{
-		printf("Hash file deleted\n");
+		//perror("Hash file deleted\n");
 	}
 
 	FILE *f;
@@ -513,13 +513,13 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 							int d = fseek(h, 0 * sizeof(struct DogType), SEEK_SET);
 							if (d == -1)
 							{
-								printf("error al regresar al inicio \n");
+								perror("error al regresar al inicio \n");
 							}
 
 							d = fseek(h, number * sizeof(struct DogType), SEEK_SET);
 							if (d == -1)
 							{
-								printf("error al mover al index\n");
+								perror("error al mover al index\n");
 							}
 							int r = fwrite(&searchedReg, sizeof(struct DogType), 1, h);
 							
@@ -531,7 +531,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 							d = fseek(h, 0 * sizeof(struct DogType), SEEK_SET);
 							if (d == -1)
 							{
-								printf("error al regresar al inicio \n");
+								perror("error al regresar al inicio \n");
 							}
 							fclose(h);
 							
@@ -679,7 +679,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 		case 5:
 			break;
 		default:
-			printf("Default\n");
+			//printf("Default\n");
 			break;
 	}
 
@@ -702,9 +702,9 @@ void *connection_handler(void *client){
 	REGISTROS = countRecords(f);
 	close(f);
 
-	printf("---------------------------------------------------------------------------\n");
-	printf("CONEXION ESTABLECIDA\n");
-	printf("---------------------------------------------------------------------------\n");
+	//printf("---------------------------------------------------------------------------\n");
+	//printf("CONEXION ESTABLECIDA\n");
+	//printf("---------------------------------------------------------------------------\n");
 
 	int r = send(fd1, &REGISTROS, sizeof(REGISTROS), 0);
 	if(r == -1 ){
@@ -732,9 +732,9 @@ void *connection_handler(void *client){
 int main(){
 
 	clearScreen();
-	printf("---------------------------------------------------------------------------\n");
-	printf("CARGANDO DATOS ...\n");
-	printf("---------------------------------------------------------------------------\n");
+	//printf("---------------------------------------------------------------------------\n");
+	//printf("CARGANDO DATOS ...\n");
+	//printf("---------------------------------------------------------------------------\n");
 	medicalCreated = readInt();
 	readHash();
 
@@ -770,7 +770,7 @@ int main(){
 		perror("error en listen");
 	}
 
-	printf("ESPERANDO CONEXION\n");
+	//printf("ESPERANDO CONEXION\n");
 
 	//Conexion con un cliente 
 	tamaClient = 0;
