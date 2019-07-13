@@ -786,21 +786,21 @@ int main(){
 		exit(-1);
 	}
 
-	int error = pthread_mutex_init(&mutex_lock2, NULL);
+	error = pthread_mutex_init(&mutex_lock2, NULL);
 	if (error != 0)
 	{
 		perror("Error creando mutex");
 		exit(-1);
 	}
 
-	int error = pthread_mutex_init(&mutex_lock3, NULL);
+	error = pthread_mutex_init(&mutex_lock3, NULL);
 	if (error != 0)
 	{
 		perror("Error creando mutex");
 		exit(-1);
 	}
 
-	int error = pthread_mutex_init(&mutex_lock4, NULL);
+	error = pthread_mutex_init(&mutex_lock4, NULL);
 	if (error != 0)
 	{
 		perror("Error creando mutex");
