@@ -347,11 +347,14 @@ int main(){
 				perror("Error Enviando opcion de menu ");
 			}
 
+			printf("Espere un momento porfavor ...");
+
 			r =  recv(fd, &REGISTROS, sizeof(int), 0);
 			if(r ==-1){
 				perror("Error recibiendo index ");
 			}
 
+			clearScreen();
 			printf("---------------------------------------------------------------------------\n");
 			printf("INGRESAR REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n\n");
@@ -476,11 +479,14 @@ int main(){
 				perror("Error Enviando opcion de menu ");
 			}
 
+			printf("Espere un momento porfavor ...");
+
 			r =  recv(fd, &REGISTROS, sizeof(int), 0);
 			if(r ==-1){
 				perror("Error recibiendo index ");
 			}
 			
+			clearScreen();
 			printf("---------------------------------------------------------------------------\n");
 			printf("VER REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n");
@@ -664,11 +670,14 @@ int main(){
 				perror("Error Enviando opcion de menu ");
 			}
 
+			printf("Espere un momento porfavor ...");
+
 			r =  recv(fd, &REGISTROS, sizeof(int), 0);
 			if(r ==-1){
 				perror("Error recibiendo index ");
 			}
 
+			clearScreen();
 			printf("---------------------------------------------------------------------------\n");
 			printf("BORRAR REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n");

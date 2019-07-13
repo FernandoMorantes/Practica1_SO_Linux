@@ -462,7 +462,8 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			break;
 
 		case 2:
-			printf("");
+			sem_wait(&semaforo);
+			//pthread_mutex_lock(&mutex_lock);
 
 			v = send(sockId, &REGISTROS, sizeof(int), 0);
 			if(v == -1){
@@ -475,9 +476,6 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			}
 
 			if(confirmSignal == 1){
-
-				sem_wait(&semaforo);
-				//pthread_mutex_lock(&mutex_lock);
 
 				int data2, hist;
 				struct DogType searchedReg;
@@ -637,11 +635,11 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 
 						fclose(t);
 				}
-
-				sem_post(&semaforo);
-				//pthread_mutex_unlock(&mutex_lock);
 			}
-			
+
+			sem_post(&semaforo);
+			//pthread_mutex_unlock(&mutex_lock);
+
 			break;
 		case 3:
 			sem_wait(&semaforo);
@@ -680,15 +678,14 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 
 			break;
 		case 4:
-			printf("");
+			sem_wait(&semaforo);
+			//pthread_mutex_lock(&mutex_lock);
+
 			char data4[256];
 			v =  recv(sockId, data4, sizeof(data4), 0);
 			if(v ==-1){
 				perror("Error recibiendo nombre");
 			}
-
-			sem_wait(&semaforo);
-			//pthread_mutex_lock(&mutex_lock);
 
 			FILE *g;
 			g = fopen("dataDogs.dat", "rb+");
