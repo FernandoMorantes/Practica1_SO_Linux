@@ -340,14 +340,12 @@ int main(){
 		switch (menuOption)
 		{
 		case 1:
-			printf("");
+			printf("Espere un momento porfavor ...");
 
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){
 				perror("Error Enviando opcion de menu ");
 			}
-
-			printf("Espere un momento porfavor ...");
 
 			r =  recv(fd, &REGISTROS, sizeof(int), 0);
 			if(r ==-1){
@@ -472,14 +470,12 @@ int main(){
 			break;
 
 		case 2:
-			printf("");
+			printf("Espere un momento porfavor ...");
 
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){
 				perror("Error Enviando opcion de menu ");
 			}
-
-			printf("Espere un momento porfavor ...");
 
 			r =  recv(fd, &REGISTROS, sizeof(int), 0);
 			if(r ==-1){
@@ -663,14 +659,12 @@ int main(){
 			break;
 
 		case 3:
-			printf("");
+			printf("Espere un momento porfavor ...");
 
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){
 				perror("Error Enviando opcion de menu ");
 			}
-
-			printf("Espere un momento porfavor ...");
 
 			r =  recv(fd, &REGISTROS, sizeof(int), 0);
 			if(r ==-1){
@@ -770,8 +764,6 @@ int main(){
 			break;
 
 		case 4:
-			printf("");
-
 			printf("Espere un momento porfavor ...");
 
 			r = send(fd, &menuOption, sizeof(int), 0);
