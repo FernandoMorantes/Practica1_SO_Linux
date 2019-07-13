@@ -835,7 +835,7 @@ int main(){
 	}
 	close(fd);
 
-	sem_close(semaforo);
+	sem_close(&semaforo);
 	//pthread_mutex_destroy(&mutex_lock);
 
 	return 0;
