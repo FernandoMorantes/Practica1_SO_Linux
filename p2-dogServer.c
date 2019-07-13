@@ -22,6 +22,7 @@
 
 sem_t semaforo;
 //pthread_mutex_t mutex_lock;
+int descr;
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -424,11 +425,13 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 	char date[80];
 	char time[80];
 	strftime(date, 80 ,"%Y%m%d", &tm);	
-
+	
 	switch(menuOption){
 		case 1:
 			sem_wait(&semaforo);
 			//pthread_mutex_lock(&mutex_lock);
+
+			
 
 			readHash();
 			int v = send(sockId, &REGISTROS, sizeof(int), 0);
@@ -462,10 +465,13 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			break;
 
 		case 2:
-			sem_wait(&semaforo);
+			//sem_wait(&semaforo);
 			//pthread_mutex_lock(&mutex_lock);
 
+			read (descr, cadena, sizeof(int));
+
 			v = send(sockId, &REGISTROS, sizeof(int), 0);
+
 			if(v == -1){
 				perror("Error Enviando confirmacion ");
 			}
@@ -637,7 +643,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 				}
 			}
 
-			sem_post(&semaforo);
+			//sem_post(&semaforo);
 			//pthread_mutex_unlock(&mutex_lock);
 
 			break;
@@ -777,6 +783,10 @@ int main(){
 	}
 	*/
 
+	mkfifo ("tuberia", 0);
+  	chmod ("tuberia", 0777);  //777 en octal
+  	descr = open ("tuberia", O_RDONLY);
+
 	struct sockaddr_in server, client1;
 	size_t tama, tamaClient;
 	int r;
@@ -830,6 +840,7 @@ int main(){
 		
 
 	}
+	close (descr);
 	close(fd);
 
 	sem_close(&semaforo);

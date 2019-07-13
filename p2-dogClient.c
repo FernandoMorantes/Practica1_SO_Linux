@@ -71,6 +71,7 @@ int lastHashIndex[2000];
 int medicalCreated = 0;
 int errorSignal = -1;
 int confirmSignal = 1;
+int descr;
 
 struct DogType
 {
@@ -296,6 +297,13 @@ int main(){
 		perror("error al crear socket");
 	}
 
+	do
+    {
+      descr = open ("tuberia", O_WRONLY);
+      if (descr == -1) sleep (1);
+    }
+    while (descr == -1);
+
 	//Parametros de la estructura sockaddr_in server
 	server.sin_family = AF_INET;
 	server.sin_port = htons(PORT);
@@ -471,7 +479,7 @@ int main(){
 
 		case 2:
 			printf("Espere un momento porfavor ...");
-
+			write (descr, 1, sizeof(int));
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){
 				perror("Error Enviando opcion de menu ");
@@ -864,6 +872,7 @@ int main(){
 		perror("Error Enviando opcion de menu ");
 	}
 	//writeInt(&medicalCreated);
+	close (descr);
 	close(fd);
 	clearScreen();
 	printf("---------------------------------------------------------------------------\n");
