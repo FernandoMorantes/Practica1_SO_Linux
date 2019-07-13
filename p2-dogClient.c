@@ -440,7 +440,6 @@ int main(){
 			newReg->weight = weight;
 			newReg->sex = sex;
 			newReg->deleted = false;
-			newReg->index = REGISTROS;
 			newReg->medicalHistoryID = -1;
 			
 			pauseShell();
@@ -456,7 +455,6 @@ int main(){
 			printf("EL REGISTRO HA SIDO CREADO CORRECTAMENTE\n");
 			printf("---------------------------------------------------------------------------\n\n");
 			printf("RESUMEN:\n\n");
-			printf("Registro numero %d\n", ((newReg->index) + 1));
 			printf("name: %s\n", newReg->name);
 			printf("type: %s\n", newReg->type);
 			printf("age: %d\n", newReg->age);
