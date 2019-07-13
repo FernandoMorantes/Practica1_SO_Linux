@@ -45,6 +45,7 @@ int HASHSIZE = 1999;
 int lastHashIndex[2000];
 int medicalCreated = 0;
 int confirmSignal = 1;
+int cadena;
 
 struct DogType
 {

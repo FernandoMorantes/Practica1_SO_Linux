@@ -12,6 +12,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 
 
 #define PORT 3535
