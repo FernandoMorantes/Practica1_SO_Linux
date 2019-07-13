@@ -12,6 +12,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include<pthread.h>
+#include <semaphore.h>
+#include <fcntl.h>
 
 #define MAXINPUT 256
 #define BACKLOG 32
