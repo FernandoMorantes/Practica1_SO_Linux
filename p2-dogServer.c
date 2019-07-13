@@ -779,8 +779,8 @@ int main(){
 	medicalCreated = readInt();
 	readHash();
 
-	sem_init(&semaforo1, 0, MAX_PROCESOS);
-	sem_init(&semaforo2, 0, MAX_PROCESOS);
+	sem_init(&semaforo1, 0, MAX_PROCESS);
+	sem_init(&semaforo2, 0, MAX_PROCESS);
 
 	/* 
 	int error = pthread_mutex_init(&mutex_lock1, NULL);
