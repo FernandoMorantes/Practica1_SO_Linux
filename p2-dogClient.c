@@ -13,7 +13,7 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
+#include <stdbool.h>
 
 #define PORT 3535
 #define MAXINPUT 256
@@ -73,7 +73,7 @@ int medicalCreated = 0;
 int errorSignal = -1;
 int confirmSignal = 1;
 int descr;
-int cadena = 1;
+bool cadena = true;
 
 struct DogType
 {
@@ -304,7 +304,7 @@ int main(){
       if (descr == -1) sleep (1);
     }
     while (descr == -1);
-	write (descr, &cadena, sizeof(int));
+	write(descr, &cadena, sizeof(bool));
 	//Parametros de la estructura sockaddr_in server
 	server.sin_family = AF_INET;
 	server.sin_port = htons(PORT);
@@ -480,8 +480,9 @@ int main(){
 
 		case 2:
 			printf("Espere un momento porfavor ...");
-			
-			write (descr, &cadena, sizeof(int));
+
+			write(descr, &cadena, sizeof(bool));
+
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){
 				perror("Error Enviando opcion de menu ");

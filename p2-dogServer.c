@@ -45,7 +45,7 @@ int HASHSIZE = 1999;
 int lastHashIndex[2000];
 int medicalCreated = 0;
 int confirmSignal = 1;
-int cadena;
+bool cadena;
 
 struct DogType
 {
@@ -469,7 +469,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			//sem_wait(&semaforo);
 			//pthread_mutex_lock(&mutex_lock);
 
-			read (descr, &cadena, sizeof(int));
+			read (descr, &cadena, sizeof(bool));
 
 			v = send(sockId, &REGISTROS, sizeof(int), 0);
 
