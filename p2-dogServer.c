@@ -480,10 +480,10 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 				perror("Error recibiendo struct ");
 			}
 
-			if(confirmSignal == 1){
+			sem_wait(&semaforo2);
+			//pthread_mutex_lock(&mutex_lock2);
 
-				sem_wait(&semaforo2);
-				//pthread_mutex_lock(&mutex_lock2);
+			if(confirmSignal == 1){
 
 				int data2, hist;
 				struct DogType searchedReg;
@@ -643,11 +643,11 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 
 						fclose(t);
 				}
-
-				sem_post(&semaforo2);
-				//pthread_mutex_unlock(&mutex_lock2);
 			}
-			
+
+			sem_post(&semaforo2);
+			//pthread_mutex_unlock(&mutex_lock2);
+
 			break;
 		case 3:
 			sem_wait(&semaforo1);
@@ -855,8 +855,8 @@ int main(){
 	}
 	close(fd);
 
-	sem_close(semaforo1);
-	sem_close(semaforo2);
+	sem_close(&semaforo1);
+	sem_close(&semaforo2);
 
 	/* 
 	pthread_mutex_destroy(&mutex_lock1);
