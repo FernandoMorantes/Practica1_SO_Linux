@@ -16,6 +16,10 @@
 #define MAXINPUT 256
 #define BACKLOG 32
 #define PORT 3535
+#define MAX_PROCESS 1
+
+//sem_t semaforo;
+pthread_mutex_t mutex_lock;
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -421,8 +425,10 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 
 	switch(menuOption){
 		case 1:
-			readHash();
+			//sem_wait(&semaforo);
+			pthread_mutex_lock(&mutex_lock);
 
+			readHash();
 			int v = send(sockId, &REGISTROS, sizeof(int), 0);
 			if(v == -1){
 				perror("Error Enviando confirmacion ");
@@ -445,8 +451,12 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			writeHash();
 			readHash();
 
+			//sem_post(&semaforo);
+			pthread_mutex_unlock(&mutex_lock);
+
 			strftime(time, 80 ,"%H%M%S", &tm);	
 			fprintf(log, "[%sT%s] Cliente[%s][insercion][%d]\n", date, time, ipstr, REGISTROS);
+			
 			break;
 
 		case 2:
@@ -463,6 +473,10 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			}
 
 			if(confirmSignal == 1){
+
+				//sem_wait(&semaforo);
+				pthread_mutex_lock(&mutex_lock);
+
 				int data2, hist;
 				struct DogType searchedReg;
 				v =  recv(sockId, &data2, sizeof(int), 0);
@@ -492,7 +506,9 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 				if(v ==-1){
 					perror("Error recibiendo Opcion historia clinica");
 				}
+
 				fclose(f);
+
 				if(hist == 1){
 					int id = sockId;
 					v = send(sockId, &id, sizeof(int), 0);
@@ -620,11 +636,14 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 						fclose(t);
 				}
 
+				//sem_post(&semaforo);
+				pthread_mutex_unlock(&mutex_lock);
 			}
 			
 			break;
 		case 3:
-			printf("");
+			//sem_wait(&semaforo);
+			pthread_mutex_lock(&mutex_lock);
 
 			v = send(sockId, &REGISTROS, sizeof(int), 0);
 			if(v == -1){
@@ -653,7 +672,10 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 				strftime(time, 80 ,"%H%M%S", &tm);	
 				fprintf(log, "[%sT%s] Cliente[%s][borrado][%d]\n", date, time, ipstr, (data3 + 1));
 			}
-			
+
+			//sem_post(&semaforo);
+			pthread_mutex_unlock(&mutex_lock);
+
 			break;
 		case 4:
 			printf("");
@@ -662,6 +684,10 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			if(v ==-1){
 				perror("Error recibiendo nombre");
 			}
+
+			//sem_wait(&semaforo);
+			pthread_mutex_lock(&mutex_lock);
+
 			FILE *g;
 			g = fopen("dataDogs.dat", "rb+");
 
@@ -671,6 +697,9 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			}
 			findByName(sockId, data4, g);
 			close(g);
+
+			//sem_post(&semaforo);
+			pthread_mutex_unlock(&mutex_lock);
 
 			strftime(time, 80 ,"%H%M%S", &tm);	
 			fprintf(log, "[%sT%s] Cliente[%s][busqueda][%s]\n", date, time, ipstr, data4);
@@ -738,7 +767,14 @@ int main(){
 	medicalCreated = readInt();
 	readHash();
 
-	
+	//sem_init(&semaforo, 0, MAX_PROCESOS);
+	int error = pthread_mutex_init(&mutex_lock, NULL);
+	if (error != 0)
+	{
+		perror("Error creando mutex");
+		exit(-1);
+	}
+
 	struct sockaddr_in server, client1;
 	size_t tama, tamaClient;
 	int r;
@@ -793,5 +829,9 @@ int main(){
 
 	}
 	close(fd);
+
+	//sem_close(semaforo);
+	pthread_mutex_destroy(&mutex_lock);
+
 	return 0;
 }
