@@ -475,6 +475,9 @@ int main(){
 			printf("height: %d\n", newReg->height);
 			printf("weight: %.2lf\n", newReg->weight);
 			printf("sex: %c\n", newReg->sex);
+			
+			write(descr, &cadena, sizeof(bool));
+			write(descr, &cadena, sizeof(bool));
 
 			pauseShell();
 			break;
@@ -771,6 +774,10 @@ int main(){
 					perror("Error Enviando opcion de menu ");
 				}
 			}
+			
+			write(descr, &cadena, sizeof(bool));
+			write(descr, &cadena, sizeof(bool));
+
 
 			pauseShell();
 			break;
@@ -848,6 +855,11 @@ int main(){
 				printf("HAY %d REGISTRO/S CON EL NOMBRE %s\n", count, nameInput);
 				printf("---------------------------------------------------------------------------\n\n");
 			}
+
+
+			write(descr, &cadena, sizeof(bool));
+			write(descr, &cadena, sizeof(bool));
+
 
 			pauseShell();
 			break;

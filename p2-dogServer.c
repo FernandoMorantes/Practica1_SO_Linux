@@ -429,9 +429,10 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 	
 	switch(menuOption){
 		case 1:
-			sem_wait(&semaforo);
+			//sem_wait(&semaforo);
 			//pthread_mutex_lock(&mutex_lock);
-
+			read(descr, &cadena, sizeof(bool));
+			read(descr, &cadena, sizeof(bool));
 			
 
 			readHash();
@@ -650,8 +651,11 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 
 			break;
 		case 3:
-			sem_wait(&semaforo);
+			//sem_wait(&semaforo);
 			//pthread_mutex_lock(&mutex_lock);
+			
+			read(descr, &cadena, sizeof(bool));
+			read(descr, &cadena, sizeof(bool));
 
 			v = send(sockId, &REGISTROS, sizeof(int), 0);
 			if(v == -1){
@@ -681,13 +685,18 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 				fprintf(log, "[%sT%s] Cliente[%s][borrado][%d]\n", date, time, ipstr, (data3 + 1));
 			}
 
-			sem_post(&semaforo);
+			//sem_post(&semaforo);
 			//pthread_mutex_unlock(&mutex_lock);
 
 			break;
 		case 4:
-			sem_wait(&semaforo);
+			//sem_wait(&semaforo);
 			//pthread_mutex_lock(&mutex_lock);
+
+
+			read(descr, &cadena, sizeof(bool));
+			read(descr, &cadena, sizeof(bool));
+
 
 			char data4[256];
 			v =  recv(sockId, data4, sizeof(data4), 0);
@@ -705,7 +714,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			findByName(sockId, data4, g);
 			close(g);
 
-			sem_post(&semaforo);
+			//sem_post(&semaforo);
 			//pthread_mutex_unlock(&mutex_lock);
 
 			strftime(time, 80 ,"%H%M%S", &tm);	
