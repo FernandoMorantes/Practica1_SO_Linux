@@ -470,6 +470,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			//pthread_mutex_lock(&mutex_lock);
 
 			read(descr, &cadena, sizeof(bool));
+			read(descr, &cadena, sizeof(bool));
 
 			v = send(sockId, &REGISTROS, sizeof(int), 0);
 

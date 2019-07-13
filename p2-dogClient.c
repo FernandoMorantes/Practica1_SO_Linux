@@ -667,10 +667,11 @@ int main(){
 			}
 			
 			write(descr, &cadena, sizeof(bool));
+			write(descr, &cadena, sizeof(bool));
 			break;
 
 		case 3:
-			printf("Espere un momento porfavor ...");
+			printf("Espere un momento porfavor ...\n");
 
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){
@@ -775,7 +776,7 @@ int main(){
 			break;
 
 		case 4:
-			printf("Espere un momento porfavor ...");
+			printf("Espere un momento porfavor ...\n");
 
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if (r == -1)
