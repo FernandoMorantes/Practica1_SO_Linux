@@ -18,8 +18,15 @@
 #define PORT 3535
 #define MAX_PROCESS 1
 
-//sem_t semaforo;
-pthread_mutex_t mutex_lock;
+//sem_t semaforo1;
+//sem_t semaforo2;
+//sem_t semaforo3;
+//sem_t semaforo4;
+
+pthread_mutex_t mutex_lock1;
+pthread_mutex_t mutex_lock2;
+pthread_mutex_t mutex_lock3;
+pthread_mutex_t mutex_lock4;
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -425,8 +432,8 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 
 	switch(menuOption){
 		case 1:
-			//sem_wait(&semaforo);
-			pthread_mutex_lock(&mutex_lock);
+			//sem_wait(&semaforo1);
+			pthread_mutex_lock(&mutex_lock1);
 
 			readHash();
 			int v = send(sockId, &REGISTROS, sizeof(int), 0);
@@ -451,8 +458,8 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			writeHash();
 			readHash();
 
-			//sem_post(&semaforo);
-			pthread_mutex_unlock(&mutex_lock);
+			//sem_post(&semaforo1);
+			pthread_mutex_unlock(&mutex_lock1);
 
 			strftime(time, 80 ,"%H%M%S", &tm);	
 			fprintf(log, "[%sT%s] Cliente[%s][insercion][%d]\n", date, time, ipstr, REGISTROS);
@@ -474,8 +481,8 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 
 			if(confirmSignal == 1){
 
-				//sem_wait(&semaforo);
-				pthread_mutex_lock(&mutex_lock);
+				//sem_wait(&semaforo2);
+				pthread_mutex_lock(&mutex_lock2);
 
 				int data2, hist;
 				struct DogType searchedReg;
@@ -636,14 +643,14 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 						fclose(t);
 				}
 
-				//sem_post(&semaforo);
-				pthread_mutex_unlock(&mutex_lock);
+				//sem_post(&semaforo2);
+				pthread_mutex_unlock(&mutex_lock2);
 			}
 			
 			break;
 		case 3:
-			//sem_wait(&semaforo);
-			pthread_mutex_lock(&mutex_lock);
+			//sem_wait(&semaforo3);
+			pthread_mutex_lock(&mutex_lock3);
 
 			v = send(sockId, &REGISTROS, sizeof(int), 0);
 			if(v == -1){
@@ -673,8 +680,8 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 				fprintf(log, "[%sT%s] Cliente[%s][borrado][%d]\n", date, time, ipstr, (data3 + 1));
 			}
 
-			//sem_post(&semaforo);
-			pthread_mutex_unlock(&mutex_lock);
+			//sem_post(&semaforo3);
+			pthread_mutex_unlock(&mutex_lock3);
 
 			break;
 		case 4:
@@ -685,8 +692,8 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 				perror("Error recibiendo nombre");
 			}
 
-			//sem_wait(&semaforo);
-			pthread_mutex_lock(&mutex_lock);
+			//sem_wait(&semaforo4);
+			pthread_mutex_lock(&mutex_lock4);
 
 			FILE *g;
 			g = fopen("dataDogs.dat", "rb+");
@@ -698,8 +705,8 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			findByName(sockId, data4, g);
 			close(g);
 
-			//sem_post(&semaforo);
-			pthread_mutex_unlock(&mutex_lock);
+			//sem_post(&semaforo4);
+			pthread_mutex_unlock(&mutex_lock4);
 
 			strftime(time, 80 ,"%H%M%S", &tm);	
 			fprintf(log, "[%sT%s] Cliente[%s][busqueda][%s]\n", date, time, ipstr, data4);
@@ -767,8 +774,33 @@ int main(){
 	medicalCreated = readInt();
 	readHash();
 
-	//sem_init(&semaforo, 0, MAX_PROCESOS);
-	int error = pthread_mutex_init(&mutex_lock, NULL);
+	//sem_init(&semaforo1, 0, MAX_PROCESOS);
+	//sem_init(&semaforo2, 0, MAX_PROCESOS);
+	//sem_init(&semaforo3, 0, MAX_PROCESOS);
+	//sem_init(&semaforo4, 0, MAX_PROCESOS);
+
+	int error = pthread_mutex_init(&mutex_lock1, NULL);
+	if (error != 0)
+	{
+		perror("Error creando mutex");
+		exit(-1);
+	}
+
+	int error = pthread_mutex_init(&mutex_lock2, NULL);
+	if (error != 0)
+	{
+		perror("Error creando mutex");
+		exit(-1);
+	}
+
+	int error = pthread_mutex_init(&mutex_lock3, NULL);
+	if (error != 0)
+	{
+		perror("Error creando mutex");
+		exit(-1);
+	}
+
+	int error = pthread_mutex_init(&mutex_lock4, NULL);
 	if (error != 0)
 	{
 		perror("Error creando mutex");
@@ -830,8 +862,15 @@ int main(){
 	}
 	close(fd);
 
-	//sem_close(semaforo);
-	pthread_mutex_destroy(&mutex_lock);
+	//sem_close(semaforo1);
+	//sem_close(semaforo2);
+	//sem_close(semaforo3);
+	//sem_close(semaforo4);
+
+	pthread_mutex_destroy(&mutex_lock1);
+	pthread_mutex_destroy(&mutex_lock2);
+	pthread_mutex_destroy(&mutex_lock3);
+	pthread_mutex_destroy(&mutex_lock4);
 
 	return 0;
 }
