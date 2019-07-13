@@ -304,7 +304,7 @@ int main(){
       if (descr == -1) sleep (1);
     }
     while (descr == -1);
-
+	write (descr, 1, sizeof(int));
 	//Parametros de la estructura sockaddr_in server
 	server.sin_family = AF_INET;
 	server.sin_port = htons(PORT);
