@@ -304,6 +304,7 @@ int main(){
       if (descr == -1) sleep (1);
     }
     while (descr == -1);
+	
 	write(descr, &cadena, sizeof(bool));
 	//Parametros de la estructura sockaddr_in server
 	server.sin_family = AF_INET;
