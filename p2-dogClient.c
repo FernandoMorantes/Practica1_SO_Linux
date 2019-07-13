@@ -73,6 +73,7 @@ int medicalCreated = 0;
 int errorSignal = -1;
 int confirmSignal = 1;
 int descr;
+int cadena = 1;
 
 struct DogType
 {
@@ -292,7 +293,6 @@ int main(){
 	int fd, fd1;
 	size_t tama;
 	int r;
-	
 	fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(fd == -1){
 		perror("error al crear socket");
@@ -304,7 +304,7 @@ int main(){
       if (descr == -1) sleep (1);
     }
     while (descr == -1);
-	write (descr, 1, sizeof(int));
+	write (descr, &cadena, sizeof(int));
 	//Parametros de la estructura sockaddr_in server
 	server.sin_family = AF_INET;
 	server.sin_port = htons(PORT);
@@ -480,7 +480,8 @@ int main(){
 
 		case 2:
 			printf("Espere un momento porfavor ...");
-			write (descr, 1, sizeof(int));
+			
+			write (descr, &cadena, sizeof(int));
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){
 				perror("Error Enviando opcion de menu ");
