@@ -770,6 +770,17 @@ int main(){
 			break;
 
 		case 4:
+			printf("");
+
+			printf("Espere un momento porfavor ...");
+
+			r = send(fd, &menuOption, sizeof(int), 0);
+			if (r == -1)
+			{
+				perror("Error Enviando opcion de menu ");
+			}
+
+			clearScreen();
 			printf("---------------------------------------------------------------------------\n");
 			printf("BUSCAR REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n\n");
@@ -796,10 +807,7 @@ int main(){
 			printf("---------------------------------------------------------------------------\n");
 
 			tolowerCase(nameInput);
-			r = send(fd, &menuOption, sizeof(int), 0);
-			if(r ==-1){
-				perror("Error Enviando opcion de menu ");
-			}
+			
 			r = send(fd, nameInput, sizeof(nameInput), 0);
 			if(r ==-1){
 				perror("Error Enviando Nombre ");
