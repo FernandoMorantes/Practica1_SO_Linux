@@ -304,8 +304,7 @@ int main(){
       if (descr == -1) sleep (1);
     }
     while (descr == -1);
-	
-	write(descr, &cadena, sizeof(bool));
+
 	//Parametros de la estructura sockaddr_in server
 	server.sin_family = AF_INET;
 	server.sin_port = htons(PORT);
@@ -481,8 +480,6 @@ int main(){
 
 		case 2:
 			printf("Espere un momento porfavor ...");
-
-			write(descr, &cadena, sizeof(bool));
 
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){
@@ -667,7 +664,7 @@ int main(){
 
 				clearScreen();
 			}
-
+			write(descr, &cadena, sizeof(bool));
 			break;
 
 		case 3:

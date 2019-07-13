@@ -787,7 +787,7 @@ int main(){
 	mkfifo ("tuberia", 0);
   	chmod ("tuberia", 0777);  //777 en octal
   	descr = open ("tuberia", O_RDONLY);
-	read (descr, &cadena, sizeof(bool));
+	
 	struct sockaddr_in server, client1;
 	size_t tama, tamaClient;
 	int r;
