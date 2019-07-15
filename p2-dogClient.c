@@ -12,7 +12,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
-
+#include <fcntl.h>
+#include <stdbool.h>
 
 #define PORT 3535
 #define MAXINPUT 256
@@ -71,6 +72,8 @@ int lastHashIndex[2000];
 int medicalCreated = 0;
 int errorSignal = -1;
 int confirmSignal = 1;
+int descr;
+bool cadena = true;
 
 struct DogType
 {
@@ -290,11 +293,18 @@ int main(){
 	int fd, fd1;
 	size_t tama;
 	int r;
-	
 	fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(fd == -1){
 		perror("error al crear socket");
 	}
+
+	do
+    {
+      descr = open("tuberia", O_WRONLY);
+      if (descr == -1) sleep (1);
+    }
+    while (descr == -1);
+	write(descr, &cadena, sizeof(bool));
 
 	//Parametros de la estructura sockaddr_in server
 	server.sin_family = AF_INET;
@@ -340,7 +350,7 @@ int main(){
 		switch (menuOption)
 		{
 		case 1:
-			printf("");
+			printf("Espere un momento porfavor ...\n");
 
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){
@@ -352,6 +362,7 @@ int main(){
 				perror("Error recibiendo index ");
 			}
 
+			clearScreen();
 			printf("---------------------------------------------------------------------------\n");
 			printf("INGRESAR REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n\n");
@@ -464,12 +475,15 @@ int main(){
 			printf("height: %d\n", newReg->height);
 			printf("weight: %.2lf\n", newReg->weight);
 			printf("sex: %c\n", newReg->sex);
+			
+			write(descr, &cadena, sizeof(bool));
+			write(descr, &cadena, sizeof(bool));
 
 			pauseShell();
 			break;
 
 		case 2:
-			printf("");
+			printf("Espere un momento porfavor ...\n");
 
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){
@@ -481,6 +495,7 @@ int main(){
 				perror("Error recibiendo index ");
 			}
 			
+			clearScreen();
 			printf("---------------------------------------------------------------------------\n");
 			printf("VER REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n");
@@ -653,11 +668,13 @@ int main(){
 
 				clearScreen();
 			}
-
+			
+			write(descr, &cadena, sizeof(bool));
+			write(descr, &cadena, sizeof(bool));
 			break;
 
 		case 3:
-			printf("");
+			printf("Espere un momento porfavor ...\n");
 
 			r = send(fd, &menuOption, sizeof(int), 0);
 			if(r ==-1){
@@ -669,6 +686,7 @@ int main(){
 				perror("Error recibiendo index ");
 			}
 
+			clearScreen();
 			printf("---------------------------------------------------------------------------\n");
 			printf("BORRAR REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n");
@@ -756,11 +774,24 @@ int main(){
 					perror("Error Enviando opcion de menu ");
 				}
 			}
+			
+			write(descr, &cadena, sizeof(bool));
+			write(descr, &cadena, sizeof(bool));
+
 
 			pauseShell();
 			break;
 
 		case 4:
+			printf("Espere un momento porfavor ...\n");
+
+			r = send(fd, &menuOption, sizeof(int), 0);
+			if (r == -1)
+			{
+				perror("Error Enviando opcion de menu ");
+			}
+
+			clearScreen();
 			printf("---------------------------------------------------------------------------\n");
 			printf("BUSCAR REGISTRO\n");
 			printf("---------------------------------------------------------------------------\n\n");
@@ -787,10 +818,7 @@ int main(){
 			printf("---------------------------------------------------------------------------\n");
 
 			tolowerCase(nameInput);
-			r = send(fd, &menuOption, sizeof(int), 0);
-			if(r ==-1){
-				perror("Error Enviando opcion de menu ");
-			}
+			
 			r = send(fd, nameInput, sizeof(nameInput), 0);
 			if(r ==-1){
 				perror("Error Enviando Nombre ");
@@ -828,6 +856,11 @@ int main(){
 				printf("---------------------------------------------------------------------------\n\n");
 			}
 
+
+			write(descr, &cadena, sizeof(bool));
+			write(descr, &cadena, sizeof(bool));
+
+
 			pauseShell();
 			break;
 
@@ -855,6 +888,7 @@ int main(){
 		perror("Error Enviando opcion de menu ");
 	}
 	//writeInt(&medicalCreated);
+	close (descr);
 	close(fd);
 	clearScreen();
 	printf("---------------------------------------------------------------------------\n");

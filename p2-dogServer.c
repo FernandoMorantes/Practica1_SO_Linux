@@ -12,10 +12,17 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include<pthread.h>
+#include <semaphore.h>
+#include <fcntl.h>
 
 #define MAXINPUT 256
 #define BACKLOG 32
 #define PORT 3535
+#define MAX_PROCESS 1
+
+sem_t semaforo;
+//pthread_mutex_t mutex_lock;
+int descr;
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -38,6 +45,7 @@ int HASHSIZE = 1999;
 int lastHashIndex[2000];
 int medicalCreated = 0;
 int confirmSignal = 1;
+bool cadena;
 
 struct DogType
 {
@@ -418,11 +426,16 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 	char date[80];
 	char time[80];
 	strftime(date, 80 ,"%Y%m%d", &tm);	
-
+	
 	switch(menuOption){
 		case 1:
-			readHash();
+			//sem_wait(&semaforo);
+			//pthread_mutex_lock(&mutex_lock);
+			read(descr, &cadena, sizeof(bool));
+			read(descr, &cadena, sizeof(bool));
+			
 
+			readHash();
 			int v = send(sockId, &REGISTROS, sizeof(int), 0);
 			if(v == -1){
 				perror("Error Enviando confirmacion ");
@@ -445,14 +458,23 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			writeHash();
 			readHash();
 
+			sem_post(&semaforo);
+			//pthread_mutex_unlock(&mutex_lock);
+
 			strftime(time, 80 ,"%H%M%S", &tm);	
 			fprintf(log, "[%sT%s] Cliente[%s][insercion][%d]\n", date, time, ipstr, REGISTROS);
+			
 			break;
 
 		case 2:
-			printf("");
+			//sem_wait(&semaforo);
+			//pthread_mutex_lock(&mutex_lock);
+
+			read(descr, &cadena, sizeof(bool));
+			read(descr, &cadena, sizeof(bool));
 
 			v = send(sockId, &REGISTROS, sizeof(int), 0);
+
 			if(v == -1){
 				perror("Error Enviando confirmacion ");
 			}
@@ -463,6 +485,7 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			}
 
 			if(confirmSignal == 1){
+
 				int data2, hist;
 				struct DogType searchedReg;
 				v =  recv(sockId, &data2, sizeof(int), 0);
@@ -492,7 +515,9 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 				if(v ==-1){
 					perror("Error recibiendo Opcion historia clinica");
 				}
+
 				fclose(f);
+
 				if(hist == 1){
 					int id = sockId;
 					v = send(sockId, &id, sizeof(int), 0);
@@ -619,12 +644,18 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 
 						fclose(t);
 				}
-
 			}
-			
+
+			//sem_post(&semaforo);
+			//pthread_mutex_unlock(&mutex_lock);
+
 			break;
 		case 3:
-			printf("");
+			//sem_wait(&semaforo);
+			//pthread_mutex_lock(&mutex_lock);
+			
+			read(descr, &cadena, sizeof(bool));
+			read(descr, &cadena, sizeof(bool));
 
 			v = send(sockId, &REGISTROS, sizeof(int), 0);
 			if(v == -1){
@@ -653,15 +684,26 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 				strftime(time, 80 ,"%H%M%S", &tm);	
 				fprintf(log, "[%sT%s] Cliente[%s][borrado][%d]\n", date, time, ipstr, (data3 + 1));
 			}
-			
+
+			//sem_post(&semaforo);
+			//pthread_mutex_unlock(&mutex_lock);
+
 			break;
 		case 4:
-			printf("");
+			//sem_wait(&semaforo);
+			//pthread_mutex_lock(&mutex_lock);
+
+
+			read(descr, &cadena, sizeof(bool));
+			read(descr, &cadena, sizeof(bool));
+
+
 			char data4[256];
 			v =  recv(sockId, data4, sizeof(data4), 0);
 			if(v ==-1){
 				perror("Error recibiendo nombre");
 			}
+
 			FILE *g;
 			g = fopen("dataDogs.dat", "rb+");
 
@@ -671,6 +713,9 @@ void executeOption(int* sockId, int menuOption, char *ipstr){
 			}
 			findByName(sockId, data4, g);
 			close(g);
+
+			//sem_post(&semaforo);
+			//pthread_mutex_unlock(&mutex_lock);
 
 			strftime(time, 80 ,"%H%M%S", &tm);	
 			fprintf(log, "[%sT%s] Cliente[%s][busqueda][%s]\n", date, time, ipstr, data4);
@@ -738,6 +783,20 @@ int main(){
 	medicalCreated = readInt();
 	readHash();
 
+	sem_init(&semaforo, 0, MAX_PROCESS);
+
+	/* 
+	int error = pthread_mutex_init(&mutex_lock, NULL);
+	if (error != 0)
+	{
+		perror("Error creando mutex");
+		exit(-1);
+	}
+	*/
+
+	mkfifo ("tuberia", 0);
+  	chmod ("tuberia", 0777);  //777 en octal
+  	descr = open ("tuberia", O_RDONLY);
 	
 	struct sockaddr_in server, client1;
 	size_t tama, tamaClient;
@@ -792,6 +851,11 @@ int main(){
 		
 
 	}
+	close (descr);
 	close(fd);
+
+	sem_close(&semaforo);
+	//pthread_mutex_destroy(&mutex_lock);
+
 	return 0;
 }
